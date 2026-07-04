@@ -21,7 +21,7 @@ export default function Nav({ user }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [theme, setTheme] = useState('light');
-  const [brand, setBrand] = useState({ prefix: 'SB', name: 'Boilers' });
+  const [brand, setBrand] = useState({ prefix: 'SB'});
 
   const isPMUser = user && ['admin', 'manager'].includes(user.role);
   const departments = user?.departments || [];
@@ -75,11 +75,13 @@ export default function Nav({ user }) {
               src="/logo.svg"
               alt=""
               aria-hidden
-              className="size-7 shrink-0 md:size-8"
-              onError={e => { e.currentTarget.style.display = 'none'; }}
+              className="logo size-7 shrink-0 md:size-8"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
             />
             <span className="flex items-center gap-1">
-              {brand.prefix}<span className="text-primary">{brand.name?.toUpperCase()}</span>
+              <span className="text-primary">{brand.prefix}</span>
               <span className="text-muted-foreground">OPS</span>
             </span>
           </Link>

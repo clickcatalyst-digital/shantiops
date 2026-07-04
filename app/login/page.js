@@ -36,7 +36,6 @@ export default function Login() {
           <div className="text-2xl font-bold tracking-tight">
             SB<span className="text-primary">BOILERS</span> <span className="text-muted-foreground">OPS</span>
           </div>
-          <p className="text-sm text-muted-foreground">Project SLA &amp; Dispatch</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={submit} className="flex flex-col gap-4">
@@ -58,7 +57,6 @@ export default function Login() {
               {busy ? 'Signing in…' : 'Sign In'}
             </Button>
           </form>
-          <p className="mt-4 text-center text-xs text-muted-foreground">Default: admin / admin123</p>
         </CardContent>
       </Card>
     </div>

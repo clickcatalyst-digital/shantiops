@@ -1,0 +1,145 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Keep the existing localStorage theme toggle, which sets [data-theme="dark"] on <html>. */
+@custom-variant dark (&:is([data-theme="dark"] *), &:is([data-theme="dark"]));
+
+:root {
+  --radius: 0.65rem;
+
+  --background: hsl(40 30% 98%);
+  --foreground: hsl(220 20% 12%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(220 20% 12%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(220 20% 12%);
+  --primary: hsl(221 70% 47%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(220 14% 96%);
+  --secondary-foreground: hsl(220 20% 20%);
+  --muted: hsl(220 14% 96%);
+  --muted-foreground: hsl(220 10% 42%);
+  --accent: hsl(221 70% 96%);
+  --accent-foreground: hsl(221 70% 38%);
+  --destructive: hsl(0 72% 51%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(220 16% 90%);
+  --input: hsl(220 16% 90%);
+  --ring: hsl(221 70% 47%);
+
+  /* Status palette — StatusBadge, delay chain, swimlane. */
+  --success: hsl(142 65% 38%);
+  --warning: hsl(32 95% 44%);
+  --danger: hsl(0 72% 51%);
+  --blocked: hsl(262 60% 55%);
+  --info: hsl(221 70% 47%);
+
+  --chart-1: hsl(221 70% 47%);
+  --chart-2: hsl(142 65% 38%);
+  --chart-3: hsl(32 95% 44%);
+  --chart-4: hsl(262 60% 55%);
+  --chart-5: hsl(0 72% 51%);
+}
+
+[data-theme="dark"] {
+  --background: hsl(222 24% 8%);
+  --foreground: hsl(210 20% 92%);
+  --card: hsl(222 20% 12%);
+  --card-foreground: hsl(210 20% 92%);
+  --popover: hsl(222 20% 12%);
+  --popover-foreground: hsl(210 20% 92%);
+  --primary: hsl(217 85% 62%);
+  --primary-foreground: hsl(222 24% 8%);
+  --secondary: hsl(222 16% 18%);
+  --secondary-foreground: hsl(210 20% 92%);
+  --muted: hsl(222 16% 16%);
+  --muted-foreground: hsl(220 12% 64%);
+  --accent: hsl(222 16% 20%);
+  --accent-foreground: hsl(210 20% 92%);
+  --destructive: hsl(0 63% 55%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(220 14% 22%);
+  --input: hsl(220 14% 24%);
+  --ring: hsl(217 85% 62%);
+
+  --success: hsl(142 58% 46%);
+  --warning: hsl(32 90% 56%);
+  --danger: hsl(0 72% 60%);
+  --blocked: hsl(262 65% 68%);
+  --info: hsl(217 85% 62%);
+
+  --chart-1: hsl(217 85% 62%);
+  --chart-2: hsl(142 58% 46%);
+  --chart-3: hsl(32 90% 56%);
+  --chart-4: hsl(262 65% 68%);
+  --chart-5: hsl(0 72% 60%);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-blocked: var(--blocked);
+  --color-info: var(--info);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+  }
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Content column — centered and fluid-wide (defined once; every page uses `container`).
+   Unlayered so it beats Tailwind's layered `container` utility + its breakpoint max-widths.
+   Fills most of a 1920 screen with symmetric gutters, scales to comfortable mobile padding. */
+.container {
+  width: 100%;
+  max-width: 1760px;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 3vw, 2rem);
+}
+
+/* Print — the on-screen packing document only. */
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+}

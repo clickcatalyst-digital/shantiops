@@ -1,0 +1,32 @@
+import { NextResponse } from 'next/server';
+import { execute, nextNumber, queryAll } from '@/lib/db';
+import { getSessionUser, requireDepartment } from '@/lib/auth';
+
+export async function POST(req) {
+  const user = getSessionUser();
+  const denied = requireDepartment(user, 'Dispatch');
+  if (denied) return denied;
+  const b = await req.json();
+  if (!b.customer_name?.trim()) {
+    return NextResponse.json({ error: 'Customer name is required' }, { status: 400 });
+  }
+  const packing_no = await nextNumber('packing_no', 'PL');
+  const r = await execute(
+    `INSERT INTO packing_lists
+       (project_id, packing_no, customer_name, customer_address, invoice_no, dc_no, dc_date,
+        vehicle_no, dispatch_through, contact_person, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [b.project_id || null, packing_no, b.customer_name.trim(), b.customer_address || null,
+     b.invoice_no || null, b.dc_no || null, b.dc_date || null, b.vehicle_no || null,
+     b.dispatch_through || null, b.contact_person || null, user?.username || null]
+  );
+  return NextResponse.json({ id: Number(r.lastId), packing_no });
+}
+
+// Used by the packing-list "new" form to preselect a project.
+export async function GET() {
+  const denied = requireDepartment(getSessionUser(), 'Dispatch');
+  if (denied) return denied;
+  const projects = await queryAll('SELECT id, project_no, customer_name FROM projects ORDER BY created_at DESC');
+  return NextResponse.json({ projects });
+}

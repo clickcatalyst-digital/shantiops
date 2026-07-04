@@ -1,0 +1,80 @@
+'use client';
+
+// Create / deactivate functional-head accounts (PM only). Department access is via the matrix above.
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { api, showToast } from '@/lib/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
+const BLANK = { username: '', password: '', display_name: '' };
+
+export default function UserManagement({ heads: initialHeads }) {
+  const router = useRouter();
+  const [heads, setHeads] = useState(initialHeads);
+  const [f, setF] = useState(BLANK);
+  const [busy, setBusy] = useState(false);
+
+  async function create(e) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await api('/api/users', { method: 'POST', body: f });
+      showToast('Functional head created');
+      setF(BLANK);
+      router.refresh();
+    } catch (err) { showToast(err.message, 'error'); }
+    setBusy(false);
+  }
+
+  async function toggleActive(head) {
+    const active = !head.active;
+    setHeads(hs => hs.map(h => (h.id === head.id ? { ...h, active } : h)));
+    try {
+      await api(`/api/users/${head.id}`, { method: 'PATCH', body: { active } });
+    } catch (err) {
+      showToast(err.message, 'error');
+      setHeads(hs => hs.map(h => (h.id === head.id ? { ...h, active: head.active } : h)));
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>User Management</CardTitle></CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {heads.length > 0 && (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow><TableHead>Head</TableHead><TableHead>Username</TableHead><TableHead>Status</TableHead><TableHead /></TableRow>
+              </TableHeader>
+              <TableBody>
+                {heads.map(h => (
+                  <TableRow key={h.id}>
+                    <TableCell>{h.display_name || '—'}</TableCell>
+                    <TableCell className="text-muted-foreground">@{h.username}</TableCell>
+                    <TableCell>{h.active ? 'Active' : 'Deactivated'}</TableCell>
+                    <TableCell><Button variant="outline" size="sm" onClick={() => toggleActive(h)}>{h.active ? 'Deactivate' : 'Reactivate'}</Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        <form onSubmit={create} className="grid items-end gap-3 sm:grid-cols-[1fr_1fr_1fr_auto]">
+          <div className="flex flex-col gap-1.5"><Label>Username *</Label>
+            <Input required value={f.username} onChange={e => setF({ ...f, username: e.target.value })} /></div>
+          <div className="flex flex-col gap-1.5"><Label>Password *</Label>
+            <Input type="password" required minLength={6} value={f.password} onChange={e => setF({ ...f, password: e.target.value })} /></div>
+          <div className="flex flex-col gap-1.5"><Label>Display Name</Label>
+            <Input value={f.display_name} onChange={e => setF({ ...f, display_name: e.target.value })} /></div>
+          <Button disabled={busy}>{busy ? 'Creating…' : 'New Head'}</Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}

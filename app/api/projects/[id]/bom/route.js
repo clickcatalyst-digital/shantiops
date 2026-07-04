@@ -1,0 +1,31 @@
+import { NextResponse } from 'next/server';
+import { execute, queryAll } from '@/lib/db';
+import { getSessionUser, requirePM } from '@/lib/auth';
+
+// Engineering/PM uploads a flat BOM for a project. Rows: material_description, moc, size_spec
+// (Make and IBR No. are NOT on the BOM — the Dispatch head fills those on the packing list, §8).
+export async function POST(req, { params }) {
+  const denied = requirePM(getSessionUser());
+  if (denied) return denied;
+  const { rows } = await req.json();
+  if (!Array.isArray(rows) || !rows.length) {
+    return NextResponse.json({ error: 'No BOM rows provided' }, { status: 400 });
+  }
+  let n = 0;
+  for (const r of rows) {
+    if (!r.material_description?.trim()) continue;
+    await execute(
+      'INSERT INTO bom_items (project_id, material_description, moc, size_spec, sort_order) VALUES (?, ?, ?, ?, ?)',
+      [params.id, r.material_description.trim(), r.moc || null, r.size_spec || null, n]
+    );
+    n++;
+  }
+  return NextResponse.json({ inserted: n });
+}
+
+export async function GET(req, { params }) {
+  const items = await queryAll(
+    'SELECT * FROM bom_items WHERE project_id = ? ORDER BY sort_order, id', [params.id]
+  );
+  return NextResponse.json({ items });
+}

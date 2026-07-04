@@ -34,7 +34,7 @@ export default function Login() {
       <Card className="w-full max-w-sm shadow-lg">
         <CardHeader className="items-center text-center">
           <div className="text-2xl font-bold tracking-tight">
-            SB<span className="text-primary">BOILERS</span> <span className="text-muted-foreground">OPS</span>
+            <span className="text-primary">SB</span> <span className="text-muted-foreground">OPS</span>
           </div>
         </CardHeader>
         <CardContent>

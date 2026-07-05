@@ -9,7 +9,12 @@ const PUBLIC_PATHS = ['/login', '/api/login', '/api/config/brand'];
 export function middleware(req) {
   const { pathname } = req.nextUrl;
 
-  if (PUBLIC_PATHS.some(p => pathname === p) || pathname.startsWith('/_next')) {
+  if (
+    PUBLIC_PATHS.some(p => pathname === p) ||
+    pathname.startsWith("/_next") ||
+    pathname === "/favicon.ico" ||
+    pathname.includes(".")
+  ) {
     return NextResponse.next();
   }
 

@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { execute, queryAll } from '@/lib/db';
-import { getSessionUser, requirePM } from '@/lib/auth';
+import { getSessionUser, requireDepartment } from '@/lib/auth';
 
-// Engineering/PM uploads a flat BOM for a project. Rows: material_description, moc, size_spec
+// Engineering (or PM) uploads a flat BOM for a project. Rows: material_description, moc, size_spec
 // (Make and IBR No. are NOT on the BOM — the Dispatch head fills those on the packing list, §8).
 export async function POST(req, { params }) {
-  const denied = requirePM(getSessionUser());
+  const denied = requireDepartment(getSessionUser(), 'Engineering');
   if (denied) return denied;
   const { rows } = await req.json();
   if (!Array.isArray(rows) || !rows.length) {

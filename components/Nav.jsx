@@ -25,7 +25,8 @@ export default function Nav({ user }) {
 
   const isPMUser = user && ['admin', 'manager'].includes(user.role);
   const departments = user?.departments || [];
-  const canSeePacking = isPMUser || departments.includes('Dispatch');
+  // Departments the user can browse: PM → all; head → their granted list. Packing lives under Dispatch.
+  const accessibleDepts = isPMUser ? DEPARTMENTS : departments;
   const activeDept = searchParams.get('dept');
 
   // Primary tabs (top bar on desktop, bottom bar on mobile). No Packing tab — it's Dispatch-scoped.
@@ -80,10 +81,9 @@ export default function Nav({ user }) {
                 e.currentTarget.style.display = "none";
               }}
             />
-            <span className="flex items-center gap-1">
-              <span className="text-primary">{brand.prefix}</span>
-              <span className="text-muted-foreground">OPS</span>
-            </span>
+            <h1 className="text-xl font-bold tracking-tight">
+              <span className="text-muted-foreground">SB</span><span className="text-primary">OPS</span>
+            </h1>
           </Link>
 
           {/* Desktop tabs */}
@@ -116,20 +116,17 @@ export default function Nav({ user }) {
                   {theme === 'dark' ? <SunIcon data-icon="inline-start" /> : <MoonIcon data-icon="inline-start" />}
                   {theme === 'dark' ? 'Light mode' : 'Dark mode'}
                 </DropdownMenuItem>
-                {isPMUser && (
+                {accessibleDepts.length > 0 && (
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger><LayoutGridIcon data-icon="inline-start" />Departments</DropdownMenuSubTrigger>
                     <DropdownMenuSubContent>
-                      {DEPARTMENTS.map(d => (
-                        <DropdownMenuItem key={d} onClick={() => router.push(`/?dept=${d}`)}>{d}</DropdownMenuItem>
+                      {accessibleDepts.map(d => (
+                        <DropdownMenuItem key={d} onClick={() => router.push(`/?dept=${d}`)}>
+                          {d === 'Dispatch' && <PackageIcon data-icon="inline-start" />}{d}
+                        </DropdownMenuItem>
                       ))}
                     </DropdownMenuSubContent>
                   </DropdownMenuSub>
-                )}
-                {canSeePacking && (
-                  <DropdownMenuItem onClick={() => router.push('/?dept=Dispatch')}>
-                    <PackageIcon data-icon="inline-start" />Packing &amp; Dispatch
-                  </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => router.push('/settings')}><SettingsIcon data-icon="inline-start" />Settings</DropdownMenuItem>

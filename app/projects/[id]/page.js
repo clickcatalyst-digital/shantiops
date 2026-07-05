@@ -1,12 +1,11 @@
 import { notFound, redirect } from 'next/navigation';
-import { getProjectDetail, getProjectBom } from '@/lib/data';
+import { getProjectDetail, getProjectBom, getProjectPackingLists } from '@/lib/data';
 import { getSessionUser, isCustomer, isPM, isHead, headDepartments, canAccessDepartment, roleHome } from '@/lib/auth';
+import { DEPARTMENTS } from '@/lib/milestones';
 import ProjectHeader from '@/components/ProjectHeader';
 import TodayBand from '@/components/TodayBand';
-import DelayChain from '@/components/DelayChain';
-import MilestoneBoard from '@/components/MilestoneBoard';
-import BomPanel from '@/components/BomPanel';
-import SwimlaneGantt from '@/components/SwimlaneGantt';
+import DepartmentPanel from '@/components/DepartmentPanel';
+import ProjectDepartmentTabs from '@/components/ProjectDepartmentTabs';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,11 +17,21 @@ export default async function ProjectDetail({ params }) {
   if (!data) notFound();
   const { project, milestones, health, blocker, progress, currentPhase, nextPhase, estDispatch } = data;
   const { bom, pending } = await getProjectBom(params.id);
+  const packingLists = await getProjectPackingLists(params.id);
 
-  // A functional head only acts on milestones in their own department(s) (§1). The full-project
-  // delay chain + swimlane stay visible for context (read-only); the editable board is scoped.
+  const pm = isPM(user);
   const head = isHead(user);
-  const boardMilestones = head ? milestones.filter(m => headDepartments(user).includes(m.department)) : milestones;
+  const myDepts = headDepartments(user);
+
+  // Needs-attention is scoped to what this user acts on: a head sees only their department(s).
+  const attentionMilestones = head ? milestones.filter(m => myDepts.includes(m.department)) : milestones;
+
+  // Shared data every DepartmentPanel/tab needs.
+  const panelData = {
+    milestones, head, projectId: project.id, bom, pending, packingLists,
+    canUploadBom: canAccessDepartment(user, 'Engineering'),
+    canPack: canAccessDepartment(user, 'Dispatch'),
+  };
 
   return (
     <main className="container flex flex-col gap-6 py-8">
@@ -30,19 +39,20 @@ export default async function ProjectDetail({ params }) {
         project={project} health={health} blocker={blocker} progress={progress}
         currentPhase={currentPhase} nextPhase={nextPhase} estDispatch={estDispatch}
       />
-      <TodayBand milestones={milestones} />
-      <DelayChain milestones={milestones} />
-      {/* Wide screens: milestones (2/3) beside the BOM rail (1/3). Stacks on smaller screens. */}
-      <div className="grid items-start gap-6 xl:grid-cols-3">
-        <div className="xl:col-span-2">
-          <MilestoneBoard milestones={boardMilestones} head={head} />
-        </div>
-        <div className="xl:col-span-1">
-          <BomPanel projectId={project.id} bom={bom} pending={pending}
-            canUpload={isPM(user)} canPack={canAccessDepartment(user, 'Dispatch')} />
-        </div>
-      </div>
-      <SwimlaneGantt milestones={milestones} />
+      <TodayBand milestones={attentionMilestones} />
+
+      {pm ? (
+        // PM/admin: the all-departments tabbed card.
+        <ProjectDepartmentTabs departments={DEPARTMENTS} {...panelData} />
+      ) : (
+        // Functional head: their own department(s), stacked.
+        myDepts.map(d => (
+          <section key={d} className="flex flex-col gap-3">
+            <h2 className="text-lg font-semibold">{d}</h2>
+            <DepartmentPanel department={d} {...panelData} />
+          </section>
+        ))
+      )}
     </main>
   );
 }

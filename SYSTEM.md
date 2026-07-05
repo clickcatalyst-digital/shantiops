@@ -25,8 +25,16 @@ altitude. Three experiences share one database:
 ## 2. Roles & access (department-based)
 
 Two internal roles plus the external customer. Access for functional heads is scoped **per
-department**, not per project — the `Department` field that already tags every milestone (Design,
-Procurement, Production, QC, Dispatch, Installation) is the single access-scoping unit.
+department**, not per project — the single access-scoping unit. Departments: Design, **Engineering**
+(owns the BOM, no milestones of its own), Procurement, Production, QC, Dispatch (owns Packing),
+Installation.
+
+**Project page is department-scoped:** a functional head sees only their department's slice — its
+milestones (Start/Close) plus the one panel that applies to them (Engineering → Bill of Materials,
+Dispatch → Packing). PM/admin see an **all-departments tabbed card** (one tab per department, each
+showing that department's milestones + actions). Packing is reached via **Departments → Dispatch**
+(no standalone tab). See `components/ProjectDepartmentTabs.jsx`, `DepartmentPanel.jsx`,
+`PackingPanel.jsx`, `BomPanel.jsx`.
 
 | Login | Password | Role | Access |
 |-------|----------|------|--------|

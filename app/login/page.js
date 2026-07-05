@@ -1,3 +1,5 @@
+// app/login/page.js
+
 'use client';
 
 import { useState } from 'react';
@@ -33,8 +35,20 @@ export default function Login() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-muted/40 to-background p-4">
       <Card className="w-full max-w-sm shadow-lg">
         <CardHeader className="items-center text-center">
-          <div className="text-2xl font-bold tracking-tight">
-            <span className="text-primary">SB</span> <span className="text-muted-foreground">OPS</span>
+          <div className="flex items-center justify-center gap-2">
+            <img
+              src="/logo.svg"
+              alt=""
+              aria-hidden
+              className="size-9 md:size-10"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+
+            <h1 className="text-2xl font-bold tracking-tight">
+              <span className="text-muted-foreground">SB</span><span className="text-primary">OPS</span>
+            </h1>
           </div>
         </CardHeader>
         <CardContent>

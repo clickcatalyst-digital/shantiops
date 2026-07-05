@@ -1,7 +1,8 @@
 'use client';
 
-// BOM workflow (§8): PM uploads a flat BOM; Dispatch generates a draft packing list from pending
-// lines; pending lines get a PDF export.
+// Engineering's Bill of Materials panel (§ dept-scoped view): upload a flat BOM + the BOM table with
+// Pending/Packed reconciliation status. Generating a packing list from the BOM is a Dispatch action
+// (see PackingPanel), not here.
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, showToast } from '@/lib/client';
@@ -18,7 +19,7 @@ function parseBom(text) {
   }).filter(r => r.material_description);
 }
 
-export default function BomPanel({ projectId, bom, pending, canUpload, canPack }) {
+export default function BomPanel({ projectId, bom, pending, canUpload }) {
   const router = useRouter();
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -38,27 +39,10 @@ export default function BomPanel({ projectId, bom, pending, canUpload, canPack }
     setBusy(false);
   }
 
-  async function generate() {
-    setBusy(true);
-    try {
-      const { id, items } = await api('/api/packing/from-bom', { method: 'POST', body: { project_id: projectId } });
-      showToast(`Draft packing list created (${items} items)`);
-      router.push(`/packing/${id}`);
-    } catch (err) { showToast(err.message, 'error'); setBusy(false); }
-  }
-
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between gap-2">
+      <CardHeader>
         <CardTitle>Bill of Materials</CardTitle>
-        {canPack && pending.length > 0 && (
-          <div className="flex gap-2">
-            <Button size="sm" disabled={busy} onClick={generate}>Generate Draft Packing List</Button>
-            <Button asChild size="sm" variant="outline">
-              <a href={`/api/projects/${projectId}/pending-pdf`} target="_blank" rel="noreferrer">Pending PDF</a>
-            </Button>
-          </div>
-        )}
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {bom.length === 0 ? (

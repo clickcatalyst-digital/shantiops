@@ -1,5 +1,5 @@
 <svg width="500" height="500" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
-{/* Static */}
+
 <g className="logo-rays">
 <rect x="370" y="297" width="15" height="64" transform="rotate(-90 370 297)" fill="#F45D20"/>
 <rect x="83" y="200.99" width="15" height="64" transform="rotate(-60 83 200.99)" fill="#F45D20"/>
@@ -8,7 +8,7 @@
 <rect x="323.343" y="182.904" width="15" height="64" transform="rotate(-143 323.343 182.904)" fill="#F45D20"/>
 <rect x="65" y="297" width="15" height="64" transform="rotate(-90 65 297)" fill="#F45D20"/>
 </g>
-{/* Rotating */}
+
 <g className="logo-spinner">
 <path d="M249.5 185C300.85 185 344 230.906 344 289.5C344 348.094 300.85 394 249.5 394C198.15 394 155 348.094 155 289.5C155 230.906 198.15 185 249.5 185Z" stroke="#F45D20" stroke-width="20"/>
 <rect x="242" y="198" width="15" height="188" fill="#F45D20"/>

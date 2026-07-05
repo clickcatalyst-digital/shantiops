@@ -8,6 +8,8 @@ import PageHeader from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatDate, formatMoney } from '@/lib/format';
+import { deltaLabel } from '@/lib/delay';
+import { cn } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,9 +38,7 @@ export default async function Executive() {
     <main className="container flex flex-col gap-6 py-8">
       <PageHeader title="Executive Overview" description="Health, risks and delivery forecast across all projects" />
 
-      {/* Hero: portfolio delay timeline */}
-      <PortfolioDelayTimeline projects={projects} />
-
+      {/* Row 1: KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
         {stats.map(s => (
           <Card key={s.label}>
@@ -50,6 +50,10 @@ export default async function Executive() {
         ))}
       </div>
 
+      {/* Row 2: milestone tracker */}
+      <PortfolioDelayTimeline projects={projects} />
+
+      {/* Row 3: risks + delay reasons */}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader><CardTitle>Top Risks</CardTitle></CardHeader>
@@ -98,26 +102,48 @@ export default async function Executive() {
       <Card>
         <CardHeader><CardTitle>Delivery Forecast</CardTitle></CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Project</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Health</TableHead>
-                <TableHead>Est. Dispatch</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {forecast.map(p => (
-                <TableRow key={p.id}>
-                  <TableCell><Link href={`/projects/${p.id}`} className="font-medium text-primary hover:underline">{p.project_no}</Link></TableCell>
-                  <TableCell>{p.customer_name}</TableCell>
-                  <TableCell><StatusBadge status={p.roll} /></TableCell>
-                  <TableCell className="tnum">{p.estDispatch ? formatDate(p.estDispatch) : '—'}</TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Project</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Health</TableHead>
+                  <TableHead>Progress</TableHead>
+                  <TableHead>Current stage</TableHead>
+                  <TableHead>Delay</TableHead>
+                  <TableHead>Value</TableHead>
+                  <TableHead>Est. Dispatch</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {forecast.map(p => (
+                  <TableRow key={p.id}>
+                    <TableCell><Link href={`/projects/${p.id}`} className="font-medium text-primary hover:underline">{p.project_no}</Link></TableCell>
+                    <TableCell>{p.customer_name}</TableCell>
+                    <TableCell><StatusBadge status={p.roll} /></TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
+                          <div className="h-full rounded-full bg-primary" style={{ width: `${p.progress}%` }} />
+                        </div>
+                        <span className="text-xs text-muted-foreground tnum">{p.progress}%</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{p.currentStage}</TableCell>
+                    <TableCell>
+                      <span className={cn('text-sm font-semibold tnum',
+                        p.cumDelay > 0 ? 'text-danger' : p.cumDelay < 0 ? 'text-success' : 'text-muted-foreground')}>
+                        {deltaLabel(p.cumDelay)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="tnum">{formatMoney(p.value)}</TableCell>
+                    <TableCell className="tnum">{p.estDispatch ? formatDate(p.estDispatch) : '—'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </main>

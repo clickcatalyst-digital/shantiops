@@ -16,7 +16,7 @@ export default async function ProjectDetail({ params }) {
 
   const data = await getProjectDetail(params.id);
   if (!data) notFound();
-  const { project, milestones, health, blocker, progress, currentPhase, nextPhase, estDispatch } = data;
+  const { project, milestones, health, blocker } = data;
   const { bom, pending } = await getProjectBom(params.id);
   const packingLists = await getProjectPackingLists(params.id);
 
@@ -36,14 +36,17 @@ export default async function ProjectDetail({ params }) {
 
   return (
     <main className="container flex flex-col gap-6 py-8">
-      <ProjectHeader
-        project={project} health={health} blocker={blocker} progress={progress}
-        currentPhase={currentPhase} nextPhase={nextPhase} estDispatch={estDispatch}
-      />
-      {/* Same Milestone Tracker as the Executive dashboard, scoped to this one project — shown to
-          every internal role (heads get the full chain as read-only context). */}
+      {/* Row 1: identity/why-delayed beside Needs Attention — mirrors the Executive page's
+          Top Risks / Delayed Because layout. */}
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <ProjectHeader project={project} health={health} blocker={blocker} />
+        <TodayBand milestones={attentionMilestones} />
+      </div>
+
+      {/* Row 2: same Milestone Tracker as the Executive dashboard, scoped to this one project —
+          shown to every internal role (heads get the full chain as read-only context). Full width
+          since the stage bar needs the room. */}
       <PortfolioDelayTimeline projects={[{ ...project, milestones }]} />
-      <TodayBand milestones={attentionMilestones} />
 
       {pm ? (
         // PM/admin: the all-departments tabbed card.

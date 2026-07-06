@@ -4,8 +4,7 @@ A single web app that runs a boiler order from **design to commissioning** and r
 packing list. SLA/milestone tracking and dispatch are one system: the same project row, different
 stages.
 
-This document reflects the **current build after the REDESIGN.md alignment** (see `REDESIGN.md` for
-the rationale behind each change).
+This document reflects the **current, working build**.
 
 ---
 
@@ -25,22 +24,10 @@ altitude. Three experiences share one database:
 ## 2. Roles & access (department-based)
 
 Two internal roles plus the external customer. Access for functional heads is scoped **per
-department**, not per project — the single access-scoping unit. Departments: Design, **Engineering**
-(owns the BOM, no milestones of its own), Procurement, Production, QC, Dispatch (owns Packing),
-Installation.
+department**, not per project — the single access-scoping unit.
 
-**Project page is department-scoped:** a functional head sees only their department's slice — its
-milestones (Start/Close) plus the one panel that applies to them (Engineering → Bill of Materials,
-Dispatch → Packing). PM/admin see an **all-departments underline tab strip** (one tab per
-department, red dot on any department with an overdue/blocked milestone). Every internal role also
-gets the **Milestone Tracker** (same component as the Executive dashboard, scoped to the one
-project) under the project header. Packing is reached via **Departments → Dispatch** (no standalone
-tab). See `components/ProjectDepartmentTabs.jsx`, `DepartmentPanel.jsx`, `PackingPanel.jsx`,
-`BomPanel.jsx`, `PortfolioDelayTimeline.jsx`.
-
-**Known gap (deferred to the per-department phase):** Departments → Engineering on the Operations
-page shows the generic attention list, which is always empty for Engineering (it has no
-milestones) — a real Engineering workspace lands with the per-department work.
+**Departments:** Design, **Engineering** (owns the Bill of Materials — no milestones of its own),
+Procurement, Production, QC, **Dispatch** (owns Packing), Installation.
 
 | Login | Password | Role | Access |
 |-------|----------|------|--------|
@@ -51,64 +38,96 @@ milestones) — a real Engineering workspace lands with the per-department work.
 | `customer` | `customer123` | Customer | One order, read-only, business language. |
 
 - **PM** creates projects, owns the schedule (planned dates), edits any milestone, uploads BOMs, and
-  manages access. Lands on **Executive**. Nav: Executive · Operations · Projects · Packing ·
-  **Departments ▾** (peek into any department) · cog → Settings.
+  manages access. Lands on **Executive**. Top nav: **Executive · Operations · Projects** — the
+  Departments picker, Settings, theme toggle, and Logout all live in the **cog dropdown** (no
+  standalone Packing tab; reached via Departments → Dispatch).
 - **Functional Head** does the data entry operators used to. Scoped to their granted department(s):
   they only see/act on milestones in those departments, get a **read-only** Projects list (no
-  "+ New Project"), and see **Packing** only if granted **Dispatch**. With more than one department
-  they get one **tab per department**. Empty state if unassigned: "No departments assigned yet —
-  contact your PM."
+  "+ New Project"), and see **Packing** only if granted **Dispatch**. A head assigned more than one
+  department gets **one tab per department in the top nav**. Empty state if unassigned: "No
+  departments assigned yet — contact your PM."
 - Access is granted by the PM in **Settings → Access Matrix** (heads × departments grid) alongside
   **User Management** (create / deactivate heads). Enforced at the route/API level via
   `requirePM` / `requireDepartment` / `canAccessDepartment` in `lib/auth.js`.
+
+**Known gap (deferred — needs more detail on per-department workflows):** Departments →
+Engineering on the Operations page currently shows the generic attention list, which is always
+empty for Engineering (it has no milestones of its own) — a real Engineering workspace lands once
+that's specced out.
 
 ---
 
 ## 3. Operations view (daily execution)
 
-- **PM** sees *Today's Factory* (everything); a **head** sees *My Work* (their departments only).
-  Both lead with **summary chips** (overdue / blocked / due-soon counts) and the delay chain inline.
-- The Departments dropdown (PM) and department tabs (multi-department head) filter this view via
-  `?dept=`.
+- **PM** sees *Today's Factory* (everything); a **head** sees *My Work* (their department(s) only).
+  Both lead with **summary chips** (overdue / blocked / due-soon counts).
+- The Departments picker (PM, in the cog) and department tabs (multi-department head, in the top
+  nav) filter this view via `?dept=`.
+- **Special case — Dispatch:** picking the Dispatch department renders the **Pending → Ready →
+  Dispatched packing board** (`components/DispatchBoard.jsx`) instead of the generic attention
+  list, since packing lives entirely under Dispatch.
 
 ### Project page — top to bottom
-1. **Health header** — the hero "Why is this delayed?" (worst blocker + dispatch impact), progress %,
-   current phase, next milestone, estimated dispatch.
-2. **Needs Attention band** — only the milestones that matter right now.
-3. **Delay Chain** (primary visual) — the 25 milestones as a left→right sequence of connected nodes
-   in fixed workflow order, colored by state (closed / running-late / blocked / on-track / not-started),
-   each showing its own days-early/late delta, with the **cumulative** total on the final node.
-4. **Milestone board** — card grid → edit drawer. PMs get the full editable drawer + a bulk grid.
-   **Functional heads get a reduced drawer**: schedule is read-only, with two actions — **Start**
-   (stamps actual start) and **Close** (stamps actual end); closing late prompts the head for the
-   delay category + reason. Heads only see their own department's milestones here.
-5. **Bill of Materials** — see §5.
-6. **Milestone Timeline (swimlane)** — the full-detail date view, collapsed, sits below the chain.
+
+The layout adapts to who's looking:
+
+1. **Row 1 — identity + attention (two columns):** project header (name, status, "why is this
+   delayed?" blocker callout, PM/value/updated, Customer-view link) beside **Needs Attention**
+   (only the milestones that matter right now, scoped to the viewer's department if they're a head).
+2. **Row 2 — Milestone Tracker:** the same component as the Executive dashboard
+   (`components/PortfolioDelayTimeline.jsx`), scoped to this one project — its stages as a
+   connected, color-coded bar with a today-marker, expandable into a per-stage pill chain (status,
+   delay delta, actual dates), cumulative dispatch delay at the end.
+3. **Row 3 — department work**, which differs by role:
+   - **PM/admin** see an **all-departments tab strip** (underline style, `components/ProjectDepartmentTabs.jsx`)
+     — one tab per department, with a red dot on any department that has an overdue/blocked
+     milestone.
+   - **Functional head** sees their own department(s) as stacked sections (no tabs) — each is a
+     `components/DepartmentPanel.jsx`.
+   - Each department's panel (`DepartmentPanel`) shows: that department's milestones via
+     `MilestoneBoard`/`MilestoneCard` → edit drawer (`MilestoneDrawer`), plus a department-specific
+     panel where relevant — **Engineering → Bill of Materials** (`BomPanel`), **Dispatch →
+     Packing** (`PackingPanel`, this project's packing lists + generate-from-BOM).
+   - **Milestone edit drawer:** PM gets the full editable form (all fields) + a bulk spreadsheet
+     grid. **Functional heads get a reduced drawer** — schedule (planned dates) is read-only, with
+     two actions: **Start** (stamps actual start) and **Close** (stamps actual end); closing late
+     prompts for delay category + reason.
 
 ### Status colours
-`Not started` (gray) · `In progress` (blue) · `Blocked` (purple) · `Due soon` (yellow) ·
-`Due ≤2d` (orange) · `Overdue` (red) · `Completed` (green).
+
+`Not started` (gray) · `On track / In progress` (blue) · `Running late` (amber) · `Blocked` (red) ·
+`Closed` (green). Each milestone's colour merges its human status with its deadline automatically
+(`lib/sla.js`, `lib/delay.js`).
 
 ---
 
 ## 4. Executive view
 
-KPIs (projects, healthy, delayed, critical, completed, avg delay, value in progress), Top Risks
-(worst blocker per project by dispatch impact), Delayed Because (by category), Delivery Forecast.
+Order, top to bottom:
+
+1. **KPIs** — projects, healthy, delayed, critical, completed, average delay (days), value in
+   progress.
+2. **Milestone Tracker** — the portfolio-wide version of the project-page tracker: one row per
+   project, stages as a connected bar, today-marker, cumulative delay, expandable per-stage detail.
+3. **Top Risks** (worst blocker per project, ranked by dispatch impact) + **Delayed Because** (by
+   category), side by side.
+4. **Delivery Forecast** — one row per project: Project · Customer · Health · Progress % · Current
+   stage · Delay (±days) · Value · Est. Dispatch.
 
 ---
 
 ## 5. Packing & BOM (the digital packing list)
 
-Board: **Pending → Ready → Dispatched**. The new flow is BOM-driven:
+The Dispatch department board: **Pending → Ready → Dispatched**. BOM-driven flow:
 
-1. **PM uploads a BOM** (flat, one list per project) on the project page.
-2. **Dispatch generates a draft packing list** from still-pending BOM lines — `Material description`,
-   `MOC`, `Size/Spec` prefilled; `IBR No.`, `Item code`, `Box No.`, `Qty`, `Make` left for the
-   Dispatch head to fill.
+1. **Engineering (or PM) uploads a BOM** (flat, one list per project) via the Engineering panel on
+   the project page.
+2. **Dispatch generates a draft packing list** from still-pending BOM lines (Engineering tab's BOM,
+   or the Dispatch tab's own panel) — `Material description`, `MOC`, `Size/Spec` prefilled;
+   `IBR No.`, `Item code`, `Box No.`, `Qty`, `Make` left for the Dispatch head to fill.
 3. On approval (status ≥ Ready), rows feed the board.
-4. **Reconciliation:** any BOM line not yet on an approved packing list stays **Pending** and can seed
-   a new list later (partial dispatch). Each packing item links back via `bom_item_id`.
+4. **Reconciliation:** any BOM line not yet on an approved packing list stays **Pending** and can
+   seed a new list later (partial dispatch). Each packing item links back via `bom_item_id`.
 5. **Real PDF generation** (`@react-pdf/renderer`): "Generate PDF" streams a document matching the
    SB-IBR-1018 layout (company header, buyer/invoice/DC block, item table, 7-day declaration,
    Stores/Production/QC/Management sign-off). A separate **Pending-list PDF** exports unpacked lines.
@@ -126,25 +145,20 @@ Board: **Pending → Ready → Dispatched**. The new flow is BOM-driven:
 
 ## 7. Architecture
 
-- **Next.js 14** (App Router) + **React 18**. Server components read data directly; API routes handle
-  writes, auth, and PDF generation. PDFs via `@react-pdf/renderer` (pure Node, externalized in
-  `next.config.js`).
+- **Next.js 14** (App Router) + **React 18**. Server components read data directly; API routes
+  handle writes, auth, and PDF generation. PDFs via `@react-pdf/renderer` (pure Node, externalized
+  in `next.config.js`).
 - **UI: Tailwind CSS v4 + shadcn/ui** (radix primitives in `components/ui/`). Theme tokens (premium
   palette + status colors) live in `app/globals.css`; dark mode via the `[data-theme="dark"]` toggle
   in `components/Nav.jsx`. Toasts via `sonner` (`showToast` in `lib/client.js` wraps it).
 - **Responsive layout:** the content column is defined once — an unlayered `.container` rule in
   `app/globals.css` (centered, `max-width: 1760px`, fluid `clamp` padding) — so it's balanced on a
-  1920 monitor (symmetric gutters) and comfortable on mobile. Pages use multi-column grids
-  (`components/PageHeader.jsx` is the shared header). **Mobile is app-like:** desktop top-tabs
-  collapse into a fixed **bottom tab bar** (icons) below `md`; tables like Projects render as cards
-  on mobile, a table on desktop.
-- **Navigation:** PM top tabs are Executive · Operations · Projects; the Departments picker and
-  Settings/Logout live in the cog dropdown. **Packing is not a top tab** — it's reached inside the
-  **Dispatch department** view (`/?dept=Dispatch`), which renders the Pending→Ready→Dispatched board.
-- **Delay visualization:** the **Portfolio Delay Timeline** (one row per project, stages colored by
-  state, today-marker, cumulative delay) is the hero of the **Executive** tab
-  (`components/PortfolioDelayTimeline.jsx`); each project page keeps a compact single-project delay
-  chain. Shared delta math is in `lib/delay.js`.
+  1920 monitor (symmetric gutters) and comfortable on mobile. **Mobile is app-like:** desktop
+  top-tabs collapse into a fixed **bottom tab bar** (icons) below `md`; tables like Projects render
+  as cards on mobile, a table on desktop.
+- **Delay visualization:** one component, `components/PortfolioDelayTimeline.jsx`, does double duty
+  — the portfolio-wide **Milestone Tracker** on Executive, and (scoped to a single project) the
+  per-project tracker on the project page. Shared delta math lives in `lib/delay.js`.
 - **Database: Turso (libsql)** via `.env.local`; falls back to a local SQLite file for offline dev.
 - **Auth**: bcrypt + JWT in an httpOnly cookie carrying role + granted departments; role/department
   gating on pages and API routes.
@@ -171,13 +185,18 @@ npm run dev        # http://localhost:3000
 
 Demo project **SB-1018** seeds on first run as a single flat 25-stage milestone chain (completed →
 an overdue/blocked vendor bottleneck → in progress → upcoming) plus the `PL-1001` packing list.
-Changing the schema against an existing pre-redesign database triggers a one-time drop-and-reseed
-(the demo data doesn't map onto the flattened model).
+
+> Note: don't run `npm run build` (production) against the same working tree while `npm run dev`
+> is pointed at it — mixing build output and dev-server output in one `.next` folder corrupts it
+> (missing vendor chunks, pages render unstyled). If that happens: stop the dev server,
+> `rm -rf .next`, restart.
 
 ---
 
-## 9. Deliberately deferred (phase 2)
+## 9. Deliberately deferred
 
 Dependency graph / auto critical-path (`depends_on_key` column in place), activity feed, file/photo
-uploads, barcode/QR validation at dispatch, email/WhatsApp notifications. None block what's
-demonstrable today.
+uploads, barcode/QR validation at dispatch, email/WhatsApp notifications, and real per-department
+workspaces beyond Engineering's BOM and Dispatch's packing (QC, Installation, Design, Procurement
+currently just get their milestone list — see the known gap in §2). None block what's demonstrable
+today.

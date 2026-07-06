@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import StatusBadge from './StatusBadge';
 import { formatDate, formatMoney } from '@/lib/format';
-import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TriangleAlertIcon, CheckCircle2Icon } from 'lucide-react';
 
-export default function ProjectHeader({ project, health, blocker, progress, currentPhase, nextPhase, estDispatch }) {
+// Identity + "why delayed" only — progress/current-phase/next-milestone/est-dispatch now live in
+// the Milestone Tracker (PortfolioDelayTimeline) directly below, which shows them per-stage anyway.
+export default function ProjectHeader({ project, health, blocker }) {
   return (
     <Card>
       <CardContent className="flex flex-col gap-4 py-5">
@@ -42,32 +43,10 @@ export default function ProjectHeader({ project, health, blocker, progress, curr
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div>
-            <div className="text-xs text-muted-foreground">Progress</div>
-            <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted">
-              <div className={cn('h-full rounded-full bg-primary')} style={{ width: `${progress}%` }} />
-            </div>
-            <div className="mt-1 text-xs text-muted-foreground tnum">{progress}% complete</div>
-          </div>
-          <Stat label="Current Phase" value={currentPhase} />
-          <Stat label="Next Milestone" value={nextPhase} />
-          <Stat label="Est. Dispatch" value={estDispatch ? formatDate(estDispatch) : '—'} />
-        </div>
-
-        <div className="flex gap-2">
+        <div>
           <Button asChild variant="outline" size="sm"><Link href={`/portal/${project.id}`}>Customer view ↗</Link></Button>
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-function Stat({ label, value }) {
-  return (
-    <div>
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-sm font-semibold">{value || '—'}</div>
-    </div>
   );
 }

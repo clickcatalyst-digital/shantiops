@@ -31,10 +31,16 @@ Installation.
 
 **Project page is department-scoped:** a functional head sees only their department's slice — its
 milestones (Start/Close) plus the one panel that applies to them (Engineering → Bill of Materials,
-Dispatch → Packing). PM/admin see an **all-departments tabbed card** (one tab per department, each
-showing that department's milestones + actions). Packing is reached via **Departments → Dispatch**
-(no standalone tab). See `components/ProjectDepartmentTabs.jsx`, `DepartmentPanel.jsx`,
-`PackingPanel.jsx`, `BomPanel.jsx`.
+Dispatch → Packing). PM/admin see an **all-departments underline tab strip** (one tab per
+department, red dot on any department with an overdue/blocked milestone). Every internal role also
+gets the **Milestone Tracker** (same component as the Executive dashboard, scoped to the one
+project) under the project header. Packing is reached via **Departments → Dispatch** (no standalone
+tab). See `components/ProjectDepartmentTabs.jsx`, `DepartmentPanel.jsx`, `PackingPanel.jsx`,
+`BomPanel.jsx`, `PortfolioDelayTimeline.jsx`.
+
+**Known gap (deferred to the per-department phase):** Departments → Engineering on the Operations
+page shows the generic attention list, which is always empty for Engineering (it has no
+milestones) — a real Engineering workspace lands with the per-department work.
 
 | Login | Password | Role | Access |
 |-------|----------|------|--------|

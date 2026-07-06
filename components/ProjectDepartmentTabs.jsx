@@ -1,33 +1,42 @@
 'use client';
 
-// PM/admin all-departments view: one tab per department, each rendering that department's panel.
-// Only mounted for PM (§ user requirement — heads see their own stacked panels instead).
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+// PM/admin all-departments view: an underline tab strip, one tab per department, each rendering
+// that department's panel. Only mounted for PM (heads see their own stacked panels instead).
+// No wrapper Card — the panels inside are Cards themselves; double-nesting looked heavy.
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { effectiveStatus } from '@/lib/sla';
 import DepartmentPanel from './DepartmentPanel';
+
+const ATTENTION = new Set(['overdue', 'blocked']);
 
 export default function ProjectDepartmentTabs({ departments, ...panelProps }) {
   if (!departments?.length) return null;
 
+  // Departments with an overdue/blocked milestone get a red dot on their tab.
+  const hot = new Set(
+    (panelProps.milestones || [])
+      .filter(m => ATTENTION.has(effectiveStatus(m).code))
+      .map(m => m.department)
+  );
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Departments</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue={departments[0]} className="gap-4">
-          <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
-            {departments.map(d => (
-              <TabsTrigger key={d} value={d}>{d}</TabsTrigger>
-            ))}
-          </TabsList>
+    // flex-col: the ui component's data-horizontal variant relies on a shadcn CSS import we don't use.
+    <Tabs defaultValue={departments[0]} className="flex-col gap-4">
+      <div className="overflow-x-auto border-b">
+        <TabsList variant="line" className="w-max justify-start px-0">
           {departments.map(d => (
-            <TabsContent key={d} value={d}>
-              <DepartmentPanel department={d} {...panelProps} />
-            </TabsContent>
+            <TabsTrigger key={d} value={d} className="flex-none gap-1.5 px-3 py-2">
+              {d}
+              {hot.has(d) && <span className="size-1.5 rounded-full bg-danger" aria-label="needs attention" />}
+            </TabsTrigger>
           ))}
-        </Tabs>
-      </CardContent>
-    </Card>
+        </TabsList>
+      </div>
+      {departments.map(d => (
+        <TabsContent key={d} value={d}>
+          <DepartmentPanel department={d} {...panelProps} />
+        </TabsContent>
+      ))}
+    </Tabs>
   );
 }

@@ -4,6 +4,7 @@ import { getSessionUser, isCustomer, isPM, isHead, headDepartments, canAccessDep
 import { DEPARTMENTS } from '@/lib/milestones';
 import ProjectHeader from '@/components/ProjectHeader';
 import TodayBand from '@/components/TodayBand';
+import PortfolioDelayTimeline from '@/components/PortfolioDelayTimeline';
 import DepartmentPanel from '@/components/DepartmentPanel';
 import ProjectDepartmentTabs from '@/components/ProjectDepartmentTabs';
 
@@ -39,6 +40,9 @@ export default async function ProjectDetail({ params }) {
         project={project} health={health} blocker={blocker} progress={progress}
         currentPhase={currentPhase} nextPhase={nextPhase} estDispatch={estDispatch}
       />
+      {/* Same Milestone Tracker as the Executive dashboard, scoped to this one project — shown to
+          every internal role (heads get the full chain as read-only context). */}
+      <PortfolioDelayTimeline projects={[{ ...project, milestones }]} />
       <TodayBand milestones={attentionMilestones} />
 
       {pm ? (

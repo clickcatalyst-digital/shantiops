@@ -1,0 +1,4 @@
+requests
+# Windows only (WindowsBackend) — not needed for --simulate/--selftest on macOS:
+# pywin32
+# wmi

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import {
   SunIcon, MoonIcon, SettingsIcon, LogOutIcon, LayoutGridIcon, BarChart3Icon,
-  LayoutDashboardIcon, FolderKanbanIcon, PackageIcon,
+  LayoutDashboardIcon, FolderKanbanIcon, PackageIcon, ShieldCheckIcon,
 } from 'lucide-react';
 import { DEPARTMENTS } from '@/lib/milestones';
 import { cn } from '@/lib/utils';
@@ -35,11 +35,13 @@ export default function Nav({ user }) {
         { href: '/executive', label: 'Executive', icon: BarChart3Icon },
         { href: '/', label: 'Operations', icon: LayoutDashboardIcon },
         { href: '/projects', label: 'Projects', icon: FolderKanbanIcon },
+        { href: '/approvals', label: 'Approvals', icon: ShieldCheckIcon },
       ]
     : [
         ...(departments.length > 1 ? departments.map(d => ({ href: `/?dept=${d}`, label: d, dept: d, icon: LayoutGridIcon })) : []),
         { href: '/', label: 'Operations', icon: LayoutDashboardIcon },
         { href: '/projects', label: 'Projects', icon: FolderKanbanIcon },
+        { href: '/approvals', label: 'Approvals', icon: ShieldCheckIcon },
       ];
 
   const isActive = l => (l.dept ? pathname === '/' && activeDept === l.dept : pathname === l.href && !activeDept);

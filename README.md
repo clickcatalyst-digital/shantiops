@@ -52,12 +52,33 @@ Dispatch generates a draft packing list from the still-pending BOM lines, fills 
 fields, and moves it through **Pending → Ready → Dispatched**. PDFs are real generated documents
 (`@react-pdf/renderer`), not browser print-to-PDF.
 
+## Approval platform
+
+**Approvals** (`/approvals`) — device/data-exit control, separate from the milestone tracking
+above. A Python agent on each employee's Windows PC blocks external devices by default; the
+employee's insertion files a request, a manager approves it with a TOTP code from Settings,
+and the device unlocks for a time-boxed window. Same engine, three sub-tabs:
+
+- **Devices** (live) — USB storage + CD/DVD. Risk badge, per-request audit timeline, device
+  whitelist, machine registration (issues the agent's auth token) with online/last-seen/version
+  status.
+- **Web** (placeholder) — browser upload approvals, planned.
+- **Mail** (placeholder) — Zoho external-mail attachment approvals, planned.
+
+Roadmap: USB ✅ → CD/DVD ✅ → phones/MTP → printing → browser blocking (domains/categories) →
+browser upload approvals → external mail.
+
+Agent, backend routes, and Windows CI build live in [agent/](agent/README.md) — includes an
+Inno Setup installer built by GitHub Actions on a `windows-latest` runner (no Windows machine
+needed for development; a Python-file simulator covers logic testing on macOS).
+
 ## Layout
 
-`lib/` (db, auth, sla/delay engine, milestone taxonomy, data helpers, formatters, packing-pdf) ·
-`app/` (pages + API routes) · `components/` (nav, project header, milestone board/card/drawer,
-department panels, BOM/packing panels, portfolio delay timeline, settings forms) ·
-`components/ui/` (shadcn primitives).
+`lib/` (db, auth, sla/delay engine, milestone taxonomy, data helpers, formatters, packing-pdf,
+`usb.js` approval domain logic) · `app/` (pages + API routes, incl. `api/agent` and `api/usb`) ·
+`components/` (nav, project header, milestone board/card/drawer, department panels, BOM/packing
+panels, portfolio delay timeline, settings forms, `DevicesPanel`/`TotpSetup` for Approvals) ·
+`components/ui/` (shadcn primitives) · `agent/` (Python Windows agent + CI build).
 
 ## Notes
 

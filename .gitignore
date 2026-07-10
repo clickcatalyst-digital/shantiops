@@ -4,3 +4,11 @@ node_modules
 *.db-journal
 .env
 .env.local
+
+# Python agent
+__pycache__
+*.pyc
+agent/sim_events.txt
+agent/dist
+agent/build
+agent/Output

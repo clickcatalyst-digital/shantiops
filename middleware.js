@@ -11,6 +11,7 @@ export function middleware(req) {
 
   if (
     PUBLIC_PATHS.some(p => pathname === p) ||
+    pathname.startsWith('/api/agent') || // USB agents send Bearer, no cookie; handler verifies the JWT
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
     pathname.includes(".")

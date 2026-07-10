@@ -1,0 +1,72 @@
+name: Agent (Windows)
+
+on:
+  push:
+    paths:
+      - 'agent/**'
+      - '.github/workflows/agent-windows.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python deps
+        run: pip install requests pywin32 wmi pyinstaller
+
+      - name: Agent self-test (state machine, no Windows/server needed)
+        run: python agent/agent.py --selftest
+
+      - name: Agent Windows self-test (real registry round-trip)
+        run: python agent/agent.py --winselftest
+
+      - name: Build executable
+        run: >
+          pyinstaller --onefile --name shanti-agent --hidden-import win32timezone
+          --distpath agent/dist --workpath agent/build --specpath agent
+          agent/agent.py
+
+      - name: Test built executable (catches PyInstaller bundling gaps)
+        run: |
+          agent\dist\shanti-agent.exe --selftest
+          agent\dist\shanti-agent.exe --winselftest
+        shell: cmd
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Compile installer
+        run: '& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" agent\installer.iss'
+        shell: pwsh
+
+      - name: Silent install smoke test
+        shell: pwsh
+        run: |
+          Start-Process -FilePath "agent\Output\ShantiAgentSetup.exe" `
+            -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/ServerUrl=http://localhost:3000","/Token=ci-smoke-test-token" `
+            -Wait
+          Start-Sleep -Seconds 3
+          if (!(Test-Path "$env:ProgramData\ShantiAgent\config.json")) { throw "config.json was not written by the installer" }
+          $config = Get-Content "$env:ProgramData\ShantiAgent\config.json" | ConvertFrom-Json
+          if ($config.token -ne "ci-smoke-test-token") { throw "config.json token mismatch" }
+          schtasks /query /tn ShantiUsbAgent
+
+      - name: Uninstall (cleanup after smoke test)
+        if: always()
+        shell: pwsh
+        run: |
+          schtasks /end /tn ShantiUsbAgent 2>$null
+          schtasks /delete /tn ShantiUsbAgent /f 2>$null
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shanti-agent-windows
+          path: |
+            agent/dist/shanti-agent.exe
+            agent/Output/ShantiAgentSetup.exe

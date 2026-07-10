@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { queryOne, execute } from '@/lib/db';
 import { getSessionUser, signAgentToken } from '@/lib/auth';
 import { audit } from '@/lib/usb';
+import { issueEnrollCode } from '@/lib/enroll';
 
 export async function POST(req) {
   const user = getSessionUser();
@@ -17,8 +18,10 @@ export async function POST(req) {
 
   const { lastId } = await execute('INSERT INTO machines (name, user_id) VALUES (?, ?)', [name, owner.id]);
   const machineId = Number(lastId);
+  const code = await issueEnrollCode(machineId);
   await audit('token_issued', { machine_id: machineId, actor: user.username, detail: name });
-  return NextResponse.json({ id: machineId, token: signAgentToken(machineId) });
+  // token retained as the manual fallback path; code is the zero-typing default.
+  return NextResponse.json({ id: machineId, code, token: signAgentToken(machineId) });
 }
 
 // Kill switch / reactivate.

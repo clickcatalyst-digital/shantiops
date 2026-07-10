@@ -49,12 +49,12 @@ jobs:
         shell: pwsh
         run: |
           Start-Process -FilePath "agent\Output\ShantiAgentSetup.exe" `
-            -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/ServerUrl=http://localhost:3000","/Token=ci-smoke-test-token" `
+            -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/ServerUrl=http://localhost:3000","/EnrollCode=CISMOKE9" `
             -Wait
           Start-Sleep -Seconds 3
           if (!(Test-Path "$env:ProgramData\ShantiAgent\config.json")) { throw "config.json was not written by the installer" }
           $config = Get-Content "$env:ProgramData\ShantiAgent\config.json" | ConvertFrom-Json
-          if ($config.token -ne "ci-smoke-test-token") { throw "config.json token mismatch" }
+          if ($config.enroll_code -ne "CISMOKE9") { throw "config.json enroll_code mismatch" }
           schtasks /query /tn ShantiUsbAgent
 
       - name: Uninstall (cleanup after smoke test)

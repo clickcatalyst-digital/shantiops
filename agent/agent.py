@@ -35,6 +35,41 @@ def load_config():
         return json.load(f)
 
 
+def ensure_token(config):
+    """Zero-typing enrollment: if there's no token yet, redeem an enroll code (from a sidecar
+    shanti-enroll.json dropped next to config, or an inline enroll_code) for the machine token,
+    then persist it. Falls back to the existing token when one is already present."""
+    if config.get("token"):
+        return config
+
+    sidecar = CONFIG_PATH.parent / "shanti-enroll.json"
+    if sidecar.exists():
+        with open(sidecar) as f:
+            enroll = json.load(f)
+        server_url = enroll.get("server_url") or config.get("server_url")
+        code = enroll.get("enroll_code")
+    else:
+        server_url = config.get("server_url")
+        code = config.get("enroll_code")
+
+    if not (server_url and code):
+        raise SystemExit("no token and no enroll code — cannot start")
+
+    r = requests.post(f"{server_url.rstrip('/')}/api/agent/enroll", json={"code": code}, timeout=15)
+    if not r.ok:
+        raise SystemExit(f"enrollment failed: {r.status_code} {r.text}")
+    token = r.json()["token"]
+
+    config = {"server_url": server_url, "token": token, "poll_seconds": config.get("poll_seconds", 5)}
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(config, f, indent=2)
+    if sidecar.exists():
+        sidecar.unlink()   # consumed — don't leave the code lying around
+    log.info("enrolled successfully; token stored")
+    return config
+
+
 def fingerprint(d):
     return (d.get("kind", "usb"), d["vendor_id"], d["product_id"], d.get("serial", ""))
 
@@ -43,11 +78,12 @@ class Agent:
     """States: BLOCKED (default / fail-safe) -> PENDING (request filed) -> APPROVED (unlocked).
     Rejection, revocation, expiry, or device removal all snap back to BLOCKED."""
 
-    def __init__(self, backend, server_url, token, poll_seconds=5):
+    def __init__(self, backend, server_url, token, poll_seconds=5, browser_guard=None):
         self.backend = backend
         self.server_url = server_url.rstrip("/")
         self.token = token
         self.poll_seconds = poll_seconds
+        self.browser_guard = browser_guard   # optional BrowserGuard; separate from device state machine
         self.state = "BLOCKED"
         self.tracked_device = None   # device this request/approval is about
         self.expires_at = None       # epoch ms, mirrors the server's usb_requests.expires_at
@@ -148,6 +184,8 @@ class Agent:
     def run_forever(self):
         while True:
             self.tick()
+            if self.browser_guard:
+                self.browser_guard.refresh()   # sync browser policy + grants each cycle
             time.sleep(self.poll_seconds)
 
 
@@ -158,10 +196,10 @@ def selftest():
 
     class StubBackend:
         def __init__(self):
-            self.blocked = {"usb": True, "cd": True}
+            self.blocked = {"usb": True, "cd": True, "phone": True}
             self.devices = []
 
-        def block(self): self.blocked = {"usb": True, "cd": True}
+        def block(self): self.blocked = {"usb": True, "cd": True, "phone": True}
         def unblock(self, kind="usb"): self.blocked[kind] = False
         def is_blocked(self, kind="usb"): return self.blocked[kind]
         def list_devices(self): return self.devices
@@ -228,13 +266,22 @@ def selftest():
         assert agent.state == "BLOCKED", agent.state
         assert backend.blocked["cd"] is True and backend.blocked["usb"] is True
 
+        # Phone (MTP/WPD): approving a phone unblocks only 'phone', leaves USB storage blocked.
+        phone_device = {"kind": "phone", "vendor_id": "05ac", "product_id": "12a8", "serial": "SN9"}
+        post_response = {"id": 4, "status": "approved", "expires_at": (time.time() + 60) * 1000}
+        backend.devices = [phone_device]
+        agent.tick()
+        assert agent.state == "APPROVED", agent.state
+        assert backend.blocked["phone"] is False
+        assert backend.blocked["usb"] is True, "approving a phone must not open USB storage"
+
     print("selftest OK")
 
 
 def winselftest():
     """Real registry round-trip on Windows — the genuine test CI's windows-latest runner can
     do that macOS never can. Saves and restores prior state; exits nonzero on failure."""
-    from backends import WindowsBackend, USBSTOR_KEY, CD_POLICY_KEY
+    from backends import WindowsBackend, USBSTOR_KEY
 
     winreg = __import__("winreg")
     backend = WindowsBackend()
@@ -246,13 +293,19 @@ def winselftest():
         backend.block()
         assert backend.is_blocked("usb") is True, "USBSTOR did not report blocked after block()"
         assert backend.is_blocked("cd") is True, "CD policy did not report blocked after block()"
+        assert backend.is_blocked("phone") is True, "WPD policy did not report blocked after block()"
 
         backend.unblock("usb")
         assert backend.is_blocked("usb") is False, "USBSTOR still blocked after unblock('usb')"
         assert backend.is_blocked("cd") is True, "unblock('usb') must not touch the cd channel"
+        assert backend.is_blocked("phone") is True, "unblock('usb') must not touch the phone channel"
 
         backend.unblock("cd")
         assert backend.is_blocked("cd") is False, "CD policy still blocked after unblock('cd')"
+        assert backend.is_blocked("phone") is True, "unblock('cd') must not touch the phone channel"
+
+        backend.unblock("phone")
+        assert backend.is_blocked("phone") is False, "WPD policy still blocked after unblock('phone')"
 
         devices = backend.list_devices()
         assert isinstance(devices, list), "list_devices() must return a list"
@@ -260,6 +313,7 @@ def winselftest():
     finally:
         backend._set_start(original_start)
         backend._set_cd_deny(False)
+        backend._set_wpd_deny(False)
 
     print("winselftest OK")
 
@@ -281,9 +335,13 @@ def main():
         return
 
     from backends import SimulatorBackend, WindowsBackend
-    config = load_config()
+    from browser import BrowserGuard
+    config = ensure_token(load_config())
     backend = SimulatorBackend() if args.simulate else WindowsBackend()
-    agent = Agent(backend, config["server_url"], config["token"], config.get("poll_seconds", 5))
+    guard = BrowserGuard(config["server_url"], config["token"], __version__)
+    guard.start()   # localhost HTTP server for the browser extension
+    agent = Agent(backend, config["server_url"], config["token"], config.get("poll_seconds", 5),
+                  browser_guard=guard)
     agent.run_forever()
 
 

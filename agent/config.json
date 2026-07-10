@@ -1,5 +1,5 @@
 {
   "server_url": "http://localhost:3000",
-  "token": "",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYWdlbnQiLCJtYWNoaW5lX2lkIjo3LCJpYXQiOjE3ODM2NjE2OTUsImV4cCI6MTgxNTE5NzY5NX0.C72O7L3mRjiw6zSzoOhaalVvgjhhxWimshJUqP-G4yE",
   "poll_seconds": 5
 }

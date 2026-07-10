@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Access blocked</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0b0f19; color: #e5e7eb; margin: 0;
+           display: flex; min-height: 100vh; align-items: center; justify-content: center; }
+    .card { max-width: 460px; padding: 2.5rem; text-align: center; }
+    h1 { font-size: 1.4rem; margin: 0 0 .5rem; }
+    .domain { font-weight: 700; color: #fff; }
+    p { color: #9ca3af; line-height: 1.5; }
+    button { margin-top: 1.25rem; padding: .7rem 1.4rem; font-size: 1rem; border: 0; border-radius: 8px;
+             background: #4f46e5; color: #fff; cursor: pointer; }
+    button:disabled { opacity: .6; cursor: default; }
+    .status { margin-top: 1rem; font-size: .9rem; color: #9ca3af; min-height: 1.2em; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🔒 <span class="domain" id="domain"></span> is blocked</h1>
+    <p id="lead">This website is restricted by your organization's policy.</p>
+    <button id="request" hidden>Request access</button>
+    <div class="status" id="status"></div>
+  </div>
+  <script src="blocked.js"></script>
+</body>
+</html>

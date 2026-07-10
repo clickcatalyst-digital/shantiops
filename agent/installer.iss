@@ -1,10 +1,17 @@
-; Inno Setup script for the Shanti USB/CD approval agent.
+; Inno Setup script for the Shanti device/browser approval agent.
 ; Built by CI (.github/workflows/agent-windows.yml) against dist\shanti-agent.exe (PyInstaller
-; onefile build) — this script is not meant to be compiled by hand against a source checkout
-; without running that build first.
+; onefile build) — not meant to be compiled by hand without running that build first.
+;
+; Two enrollment paths:
+;   1. Zero-typing: a shanti-enroll.json placed next to this installer is copied to ProgramData;
+;      the agent redeems it on first run. No prompts.
+;   2. Manual: the wizard asks for an enrollment code (server URL pre-filled).
 #define MyAppName "Shanti Agent"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.2.0"
 #define MyAppExeName "shanti-agent.exe"
+#define DefaultServerUrl "http://localhost:3000"
+; Set once the browser extension is published to the Chrome Web Store; empty = don't force-install.
+#define ExtensionId ""
 
 [Setup]
 AppId={{7C2E9B1A-4F3D-4A6E-9C2B-1D8E6F0A5B3C}
@@ -28,37 +35,51 @@ Source: "dist\shanti-agent.exe"; DestDir: "{app}"; Flags: ignoreversion
 [Code]
 var
   ConfigPage: TInputQueryWizardPage;
+  HasSidecar: Boolean;
+
+function SidecarPath: string;
+begin
+  Result := ExpandConstant('{src}\shanti-enroll.json');
+end;
 
 procedure InitializeWizard;
 begin
+  HasSidecar := FileExists(SidecarPath);
+  if HasSidecar then exit;   // zero-typing path — no questions asked
+
   ConfigPage := CreateInputQueryPage(wpSelectDir,
-    'Agent Configuration', 'Connect this machine to your Shanti Ops server',
-    'Enter the server URL and the agent token issued from the dashboard ' +
-    '(Approvals -> Devices -> Machines -> Register machine).');
+    'Agent Setup', 'Connect this machine to your Shanti Ops server',
+    'Enter the enrollment code from your manager. (Advanced: change the server URL only if told to.)');
+  ConfigPage.Add('Enrollment code:', False);
   ConfigPage.Add('Server URL:', False);
-  ConfigPage.Add('Agent token:', False);
-  // CLI overrides (/ServerUrl=... /Token=...) let CI silent-install without typing into the wizard.
-  ConfigPage.Values[0] := ExpandConstant('{param:ServerUrl|http://localhost:3000}');
-  ConfigPage.Values[1] := ExpandConstant('{param:Token|}');
+  ConfigPage.Values[0] := ExpandConstant('{param:EnrollCode|}');
+  ConfigPage.Values[1] := ExpandConstant('{param:ServerUrl|{#DefaultServerUrl}}');
 end;
 
-function GetServerUrl: string;
+function GetCode: string;
 begin
   Result := ConfigPage.Values[0];
 end;
 
-function GetToken: string;
+function GetServerUrl: string;
 begin
   Result := ConfigPage.Values[1];
+end;
+
+function HasBadChars(s: string): Boolean;
+begin
+  Result := (Pos('"', s) > 0) or (Pos('\', s) > 0);
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   Result := True;
-  if CurPageID = ConfigPage.ID then begin
-    if (Pos('"', GetServerUrl) > 0) or (Pos('\', GetServerUrl) > 0) or
-       (Pos('"', GetToken) > 0) or (Pos('\', GetToken) > 0) then begin
-      MsgBox('Server URL and token must not contain " or \', mbError, MB_OK);
+  if (not HasSidecar) and (CurPageID = ConfigPage.ID) then begin
+    if HasBadChars(GetCode) or HasBadChars(GetServerUrl) then begin
+      MsgBox('Code and server URL must not contain " or \', mbError, MB_OK);
+      Result := False;
+    end else if GetCode = '' then begin
+      MsgBox('Please enter the enrollment code.', mbError, MB_OK);
       Result := False;
     end;
   end;
@@ -66,20 +87,44 @@ end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 var
-  ConfigDir, ConfigPath, JsonContent: string;
+  ConfigDir, JsonContent: string;
 begin
-  if CurStep = ssPostInstall then begin
-    ConfigDir := ExpandConstant('{commonappdata}\ShantiAgent');
-    ForceDirectories(ConfigDir);
-    ConfigPath := ConfigDir + '\config.json';
+  if CurStep <> ssPostInstall then exit;
+  ConfigDir := ExpandConstant('{commonappdata}\ShantiAgent');
+  ForceDirectories(ConfigDir);
+
+  if HasSidecar then begin
+    // Copy the enrollment file; the agent reads server_url + code from it on first run.
+    FileCopy(SidecarPath, ConfigDir + '\shanti-enroll.json', False);
+    JsonContent := '{' + #13#10 + '  "token": "",' + #13#10 + '  "poll_seconds": 5' + #13#10 + '}';
+  end else begin
     JsonContent :=
       '{' + #13#10 +
       '  "server_url": "' + GetServerUrl + '",' + #13#10 +
-      '  "token": "' + GetToken + '",' + #13#10 +
+      '  "enroll_code": "' + GetCode + '",' + #13#10 +
+      '  "token": "",' + #13#10 +
       '  "poll_seconds": 5' + #13#10 +
       '}';
-    SaveStringToFile(ConfigPath, JsonContent, False);
   end;
+  SaveStringToFile(ConfigDir + '\config.json', JsonContent, False);
+end;
+
+[Registry]
+; Force-install the browser extension on Chrome and Edge (Edge honors the Chrome Web Store update
+; URL). Only written once an extension ID is set — until then these entries are skipped.
+Root: HKLM; Subkey: "SOFTWARE\Policies\Google\Chrome\ExtensionInstallForcelist"; \
+  ValueType: string; ValueName: "1"; \
+  ValueData: "{#ExtensionId};https://clients2.google.com/service/update2/crx"; \
+  Flags: uninsdeletevalue; Check: ForceExtension
+Root: HKLM; Subkey: "SOFTWARE\Policies\Microsoft\Edge\ExtensionInstallForcelist"; \
+  ValueType: string; ValueName: "1"; \
+  ValueData: "{#ExtensionId};https://clients2.google.com/service/update2/crx"; \
+  Flags: uninsdeletevalue; Check: ForceExtension
+
+[Code]
+function ForceExtension: Boolean;
+begin
+  Result := '{#ExtensionId}' <> '';
 end;
 
 [Run]

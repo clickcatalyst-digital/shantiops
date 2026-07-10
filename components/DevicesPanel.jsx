@@ -38,8 +38,10 @@ function timeLeft(expiresAt) {
   return `${mins} min left`;
 }
 
+const KIND_ICON = { cd: '💿 ', phone: '📱 ' };
+
 function deviceLine(r) {
-  const prefix = r.kind === 'cd' ? '💿 ' : '';
+  const prefix = KIND_ICON[r.kind] || '';
   const ids = r.kind === 'cd' ? '' : ` · ${r.vendor_id}:${r.product_id}`;
   return `${prefix}${r.label || 'Unknown device'}${ids}${r.serial ? ` · SN ${r.serial}` : ''}`;
 }
@@ -222,7 +224,7 @@ function DeviceRow({ d, router }) {
 
   return (
     <div className="flex flex-wrap items-center gap-3 py-2.5">
-      <span className="font-medium">{d.kind === 'cd' ? '💿 ' : ''}{d.label || 'Unknown device'}</span>
+      <span className="font-medium">{KIND_ICON[d.kind] || ''}{d.label || 'Unknown device'}</span>
       <span className="text-xs text-muted-foreground tnum">
         {d.kind === 'cd' ? `SN ${d.serial}` : `${d.vendor_id}:${d.product_id}${d.serial ? ` · ${d.serial}` : ''}`}
       </span>
@@ -254,14 +256,14 @@ function DeviceRow({ d, router }) {
 function MachinesCard({ machines, employees, router }) {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
-  const [token, setToken] = useState(null);
+  const [enroll, setEnroll] = useState(null);   // {code, token, name}
   const [busy, setBusy] = useState(false);
 
   async function create() {
     setBusy(true);
     try {
       const data = await api('/api/usb/machines', { method: 'POST', body: { name, username } });
-      setToken(data.token);
+      setEnroll({ code: data.code, token: data.token, id: data.id, name });
       setName('');
       router.refresh();
     } catch (err) { showToast(err.message, 'error'); }
@@ -299,13 +301,21 @@ function MachinesCard({ machines, employees, router }) {
           </Button>
         </div>
 
-        {token && (
-          <div className="flex items-center gap-2 rounded-lg border bg-muted/50 p-3 text-xs">
-            <code className="truncate">{token}</code>
-            <Button size="icon-sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(token); showToast('Copied'); }}>
-              <CopyIcon />
-            </Button>
-            <span className="text-muted-foreground">Shown once — paste into the agent's config.json</span>
+        {enroll && (
+          <div className="flex flex-col gap-2 rounded-lg border bg-muted/50 p-3 text-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-muted-foreground">Enrollment code for <b>{enroll.name}</b>:</span>
+              <code className="rounded bg-background px-2 py-0.5 text-base font-bold tracking-widest">{enroll.code}</code>
+              <Button size="icon-sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(enroll.code); showToast('Copied'); }}>
+                <CopyIcon />
+              </Button>
+              <Button size="sm" variant="outline" asChild>
+                <a href={`/api/usb/machines/${enroll.id}/enroll-file`} download>Download enroll file</a>
+              </Button>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              Drop the downloaded file in the employee's Drive folder, or give them the code — the installer needs one of them (valid 24h).
+            </span>
           </div>
         )}
 
@@ -321,7 +331,10 @@ function MachinesCard({ machines, employees, router }) {
                   {m.last_seen ? relativeTime(m.last_seen) : 'never seen'}
                 </span>
                 <span className="text-xs text-muted-foreground tnum">{m.agent_version ? `v${m.agent_version}` : '—'}</span>
-                <span className={`ml-auto text-xs ${m.active ? 'text-success' : 'text-danger'}`}>{m.active ? 'Active' : 'Disabled'}</span>
+                <span className={`text-xs ${m.active ? 'text-success' : 'text-danger'}`}>{m.active ? 'Active' : 'Disabled'}</span>
+                <Button size="sm" variant="ghost" className="ml-auto" asChild>
+                  <a href={`/api/usb/machines/${m.id}/enroll-file`} download>Enroll file</a>
+                </Button>
                 <Button size="sm" variant="outline" onClick={() => toggle(m.id, !m.active)}>
                   {m.active ? 'Disable' : 'Reactivate'}
                 </Button>

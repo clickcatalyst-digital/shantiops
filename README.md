@@ -55,30 +55,39 @@ fields, and moves it through **Pending → Ready → Dispatched**. PDFs are real
 ## Approval platform
 
 **Approvals** (`/approvals`) — device/data-exit control, separate from the milestone tracking
-above. A Python agent on each employee's Windows PC blocks external devices by default; the
-employee's insertion files a request, a manager approves it with a TOTP code from Settings,
-and the device unlocks for a time-boxed window. Same engine, three sub-tabs:
+above. A manager approves each request with a TOTP code (set up in Settings); approvals are
+time-boxed and every transition is audited. One approval engine, three sub-tabs:
 
-- **Devices** (live) — USB storage + CD/DVD. Risk badge, per-request audit timeline, device
-  whitelist, machine registration (issues the agent's auth token) with online/last-seen/version
-  status.
-- **Web** (placeholder) — browser upload approvals, planned.
-- **Mail** (placeholder) — Zoho external-mail attachment approvals, planned.
+- **Devices** (live) — USB storage, CD/DVD, and **phones (MTP/WPD)**. A Python agent on each
+  employee's Windows PC blocks the device by default; insertion files a request; approval unlocks
+  it for X minutes. Risk badge, per-request audit timeline, device whitelist, and machine
+  registration with online / last-seen / agent-version status.
+- **Browser** (live) — per-domain policy: **Allow / Block / Approval-required**. A Chrome + Edge
+  MV3 extension enforces it via the local agent; approval-required sites reuse the same TOTP
+  approval + time-boxed grant. Sub-sections: Active Sessions, Blocked Websites, Pending Website
+  Requests.
+- **Mail** (placeholder) — Zoho external-mail attachment approvals (see
+  [docs/v4-zoho-mail-brainstorm.md](docs/v4-zoho-mail-brainstorm.md)).
 
-Roadmap: USB ✅ → CD/DVD ✅ → phones/MTP → printing → browser blocking (domains/categories) →
-browser upload approvals → external mail.
+Roadmap: USB ✅ · CD/DVD ✅ · phones/MTP ✅ · browser policy ✅ → printing → cloud-storage &
+web-messaging domains (just policy rows now) → app-control (block side-installed browsers) →
+external mail.
 
-Agent, backend routes, and Windows CI build live in [agent/](agent/README.md) — includes an
-Inno Setup installer built by GitHub Actions on a `windows-latest` runner (no Windows machine
-needed for development; a Python-file simulator covers logic testing on macOS).
+**Setup & deploy:** see [docs/SETUP.md](docs/SETUP.md) for the go-live checklist (publish the
+extension, wire its ID into the installer, register machines). Agent, extension, backend routes,
+and the Windows CI build live in [agent/](agent/README.md) and [extension/](extension/) — the
+installer is built by GitHub Actions on `windows-latest` (no Windows machine needed for
+development; a simulator covers logic testing on macOS). Enrollment is zero-typing (a per-machine
+`shanti-enroll.json`), and the agent **auto-updates** from a tagged GitHub Release.
 
 ## Layout
 
 `lib/` (db, auth, sla/delay engine, milestone taxonomy, data helpers, formatters, packing-pdf,
-`usb.js` approval domain logic) · `app/` (pages + API routes, incl. `api/agent` and `api/usb`) ·
-`components/` (nav, project header, milestone board/card/drawer, department panels, BOM/packing
-panels, portfolio delay timeline, settings forms, `DevicesPanel`/`TotpSetup` for Approvals) ·
-`components/ui/` (shadcn primitives) · `agent/` (Python Windows agent + CI build).
+`usb.js`/`browser.js` approval domain logic, `enroll.js` codes) · `app/` (pages + API routes,
+incl. `api/agent`, `api/usb`, `api/browser`) · `components/` (nav, project/milestone/packing UI,
+settings forms, `DevicesPanel`/`BrowserPanel`/`TotpSetup` for Approvals) · `components/ui/`
+(shadcn primitives) · `agent/` (Python Windows agent + CI build) · `extension/` (Chrome/Edge MV3
+browser-policy extension).
 
 ## Notes
 

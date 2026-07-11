@@ -87,26 +87,35 @@ end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 var
-  ConfigDir, JsonContent: string;
+  ConfigDir, ConfigPath, JsonContent, Existing: string;
 begin
   if CurStep <> ssPostInstall then exit;
   ConfigDir := ExpandConstant('{commonappdata}\ShantiAgent');
   ForceDirectories(ConfigDir);
+  ConfigPath := ConfigDir + '\config.json';
 
   if HasSidecar then begin
-    // Copy the enrollment file; the agent reads server_url + code from it on first run.
+    // Fresh install / re-enroll: copy the enrollment file; the agent reads it on first run.
     FileCopy(SidecarPath, ConfigDir + '\shanti-enroll.json', False);
     JsonContent := '{' + #13#10 + '  "token": "",' + #13#10 + '  "poll_seconds": 5' + #13#10 + '}';
-  end else begin
-    JsonContent :=
-      '{' + #13#10 +
-      '  "server_url": "' + GetServerUrl + '",' + #13#10 +
-      '  "enroll_code": "' + GetCode + '",' + #13#10 +
-      '  "token": "",' + #13#10 +
-      '  "poll_seconds": 5' + #13#10 +
-      '}';
+    SaveStringToFile(ConfigPath, JsonContent, False);
+    exit;
   end;
-  SaveStringToFile(ConfigDir + '\config.json', JsonContent, False);
+
+  // Update-safety: if a config with a real token already exists (an auto-update re-running the
+  // installer), never overwrite it — that would blank the machine's credential.
+  if LoadStringFromFile(ConfigPath, Existing) and (Pos('"token": ""', Existing) = 0)
+     and (Pos('"token":""', Existing) = 0) and (Pos('"token"', Existing) > 0) then
+    exit;
+
+  JsonContent :=
+    '{' + #13#10 +
+    '  "server_url": "' + GetServerUrl + '",' + #13#10 +
+    '  "enroll_code": "' + GetCode + '",' + #13#10 +
+    '  "token": "",' + #13#10 +
+    '  "poll_seconds": 5' + #13#10 +
+    '}';
+  SaveStringToFile(ConfigPath, JsonContent, False);
 end;
 
 [Registry]

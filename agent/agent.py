@@ -19,7 +19,7 @@ from pathlib import Path
 
 import requests
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 log = logging.getLogger("usb-agent")
 
 # PyInstaller extracts to a temp dir at runtime, so a frozen build can't keep config next to
@@ -74,6 +74,18 @@ def fingerprint(d):
     return (d.get("kind", "usb"), d["vendor_id"], d["product_id"], d.get("serial", ""))
 
 
+def _is_newer(candidate, current):
+    """True if version string `candidate` is newer than `current` (numeric, dot-separated).
+    Tuple compare, not string — so 1.10.0 > 1.9.0. Non-numeric or missing → not newer."""
+    def parse(v):
+        try:
+            return tuple(int(x) for x in str(v).split("."))
+        except (ValueError, AttributeError):
+            return None
+    a, b = parse(candidate), parse(current)
+    return a is not None and b is not None and a > b
+
+
 class Agent:
     """States: BLOCKED (default / fail-safe) -> PENDING (request filed) -> APPROVED (unlocked).
     Rejection, revocation, expiry, or device removal all snap back to BLOCKED."""
@@ -88,6 +100,7 @@ class Agent:
         self.tracked_device = None   # device this request/approval is about
         self.expires_at = None       # epoch ms, mirrors the server's usb_requests.expires_at
         self._warned_version = None  # avoid re-logging "update available" every poll
+        self._update_attempted = None  # version we've already tried to self-install (once per version)
         self.backend.block()         # fail-safe: always start locked down
 
     def _headers(self):
@@ -153,10 +166,7 @@ class Agent:
         self._apply(resp, self.tracked_device)
 
     def _apply(self, resp, device):
-        latest_version = resp.get("latest_version")
-        if latest_version and latest_version != __version__ and latest_version != self._warned_version:
-            log.warning("update available: running %s, server has %s", __version__, latest_version)
-            self._warned_version = latest_version
+        self.maybe_self_update(resp.get("latest_version"), resp.get("update_url"))
 
         status = resp.get("status")
         if status == "approved":
@@ -180,6 +190,43 @@ class Agent:
         self.state = "BLOCKED"
         self.tracked_device = None
         self.expires_at = None
+
+    def maybe_self_update(self, latest_version, update_url):
+        """If the server advertises a newer version + an installer URL, self-install it.
+        Attempted at most once per target version; a failed download just logs and keeps
+        running (retried only when the server advertises a different newer version)."""
+        if not (update_url and _is_newer(latest_version, __version__)):
+            return
+        if self._update_attempted == latest_version:
+            return
+        self._update_attempted = latest_version
+        log.info("self-updating %s -> %s from %s", __version__, latest_version, update_url)
+        self._run_update(update_url)
+
+    def _run_update(self, update_url):
+        """Download the installer and launch it silently, then hard-exit so the running exe is
+        unlocked and the installer can replace it (its [Run] schtasks /run restarts the agent).
+        On any failure, log and return WITHOUT exiting — a broken update must not kill enforcement."""
+        import subprocess
+        import tempfile
+        try:
+            r = requests.get(update_url, timeout=120)
+            r.raise_for_status()
+            path = Path(tempfile.gettempdir()) / "ShantiAgentSetup.exe"
+            path.write_bytes(r.content)
+        except (requests.RequestException, OSError) as e:
+            log.warning("update download failed, staying on current version: %s", e)
+            return
+        try:
+            subprocess.Popen([str(path), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"],
+                             close_fds=True)
+        except OSError as e:
+            log.warning("update launch failed: %s", e)
+            return
+        # ponytail: exit immediately so the exe unlocks before the installer's file copy; the SYSTEM
+        # task's registry/DNR blocks persist during the ~10s gap, so enforcement stays on.
+        log.info("update launched; exiting for replacement")
+        os._exit(0)
 
     def run_forever(self):
         while True:
@@ -274,6 +321,25 @@ def selftest():
         assert agent.state == "APPROVED", agent.state
         assert backend.blocked["phone"] is False
         assert backend.blocked["usb"] is True, "approving a phone must not open USB storage"
+
+    # Version compare
+    assert _is_newer("1.2.0", "1.1.0")
+    assert _is_newer("1.10.0", "1.9.0"), "numeric compare, not string"
+    assert not _is_newer("1.1.0", "1.1.0")
+    assert not _is_newer("1.0.0", "1.2.0")
+    assert not _is_newer(None, "1.0.0")
+
+    # Self-update trigger: fires once for a newer version + url, skips when same/older/no-url.
+    calls = []
+    agent._run_update = lambda url: calls.append(url)
+    agent.maybe_self_update("9.9.9", "http://x/setup.exe")
+    assert calls == ["http://x/setup.exe"], "should trigger for a newer version"
+    agent.maybe_self_update("9.9.9", "http://x/setup.exe")
+    assert len(calls) == 1, "should not re-trigger for the same version"
+    agent.maybe_self_update("0.0.1", "http://x/setup.exe")
+    assert len(calls) == 1, "should not trigger for an older version"
+    agent.maybe_self_update("9.9.10", None)
+    assert len(calls) == 1, "should not trigger without an update_url"
 
     print("selftest OK")
 

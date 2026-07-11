@@ -5,7 +5,12 @@ on:
     paths:
       - 'agent/**'
       - '.github/workflows/agent-windows.yml'
+    tags:
+      - 'v*'
   workflow_dispatch:
+
+permissions:
+  contents: write   # needed to attach the installer to a GitHub Release on tag
 
 jobs:
   build:
@@ -57,6 +62,19 @@ jobs:
           if ($config.enroll_code -ne "CISMOKE9") { throw "config.json enroll_code mismatch" }
           schtasks /query /tn ShantiUsbAgent
 
+      - name: Update-safety smoke test (re-install must preserve an existing token)
+        shell: pwsh
+        run: |
+          # Simulate an already-enrolled machine, then re-run the installer as an auto-update would.
+          '{ "server_url": "http://localhost:3000", "token": "EXISTING-TOKEN", "poll_seconds": 5 }' `
+            | Set-Content "$env:ProgramData\ShantiAgent\config.json"
+          Start-Process -FilePath "agent\Output\ShantiAgentSetup.exe" `
+            -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/EnrollCode=SHOULDNOTWIN" `
+            -Wait
+          Start-Sleep -Seconds 3
+          $config = Get-Content "$env:ProgramData\ShantiAgent\config.json" | ConvertFrom-Json
+          if ($config.token -ne "EXISTING-TOKEN") { throw "re-install clobbered the existing token" }
+
       - name: Uninstall (cleanup after smoke test)
         if: always()
         shell: pwsh
@@ -70,3 +88,9 @@ jobs:
           path: |
             agent/dist/shanti-agent.exe
             agent/Output/ShantiAgentSetup.exe
+
+      - name: Attach installer to GitHub Release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: agent/Output/ShantiAgentSetup.exe

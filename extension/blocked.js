@@ -13,7 +13,12 @@ async function decide() {
   return res.json();
 }
 
-function goToSite() { location.href = `https://${domain}`; }
+// Ask the background worker to drop the (now-approved) block rule before we navigate back, so the
+// browser doesn't just redirect us straight to this page again while the periodic sync catches up.
+async function goToSite() {
+  try { await chrome.runtime.sendMessage({ type: 'syncNow' }); } catch { /* navigate anyway */ }
+  location.href = `https://${domain}`;
+}
 
 async function init() {
   let d;

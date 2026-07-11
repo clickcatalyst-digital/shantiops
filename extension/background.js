@@ -43,3 +43,12 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 chrome.runtime.onStartup.addListener(syncRules);
 chrome.alarms.onAlarm.addListener(a => { if (a.name === 'sync') syncRules(); });
+
+// The block page asks for an immediate re-sync the moment it sees an approval, so the just-granted
+// domain's block rule is dropped before it navigates back — the periodic alarm floors at ~1min.
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg?.type === 'syncNow') {
+    syncRules().then(() => sendResponse({ ok: true }));
+    return true; // keep the message channel open for the async response
+  }
+});

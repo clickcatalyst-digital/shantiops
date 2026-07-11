@@ -98,8 +98,10 @@ export async function POST(req) {
 export async function GET(req) {
   const machine = await getMachine(req);
   if (!machine) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  // Auto-update hints: agent self-installs when latest_version is newer AND update_url is set.
   const latest_version = process.env.AGENT_LATEST_VERSION || null;
+  const update_url = process.env.AGENT_UPDATE_URL || null;
   const last = await latestRequest(machine.id);
-  if (!last) return NextResponse.json({ status: 'idle', latest_version });
-  return NextResponse.json({ ...requestJson(last), latest_version });
+  if (!last) return NextResponse.json({ status: 'idle', latest_version, update_url });
+  return NextResponse.json({ ...requestJson(last), latest_version, update_url });
 }

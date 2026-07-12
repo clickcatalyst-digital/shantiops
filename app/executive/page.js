@@ -111,6 +111,7 @@ export default async function Executive() {
                   <TableHead>Health</TableHead>
                   <TableHead>Progress</TableHead>
                   <TableHead>Current stage</TableHead>
+                  <TableHead>BOM</TableHead>
                   <TableHead>Delay</TableHead>
                   <TableHead>Value</TableHead>
                   <TableHead>Est. Dispatch</TableHead>
@@ -131,6 +132,16 @@ export default async function Executive() {
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{p.currentStage}</TableCell>
+                    <TableCell>
+                      {p.bom ? (
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
+                            <div className="h-full rounded-full bg-success" style={{ width: `${p.bom.closedPct}%` }} />
+                          </div>
+                          <span className="text-xs text-muted-foreground tnum">{p.bom.closedPct}%</span>
+                        </div>
+                      ) : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
                     <TableCell>
                       <span className={cn('text-sm font-semibold tnum',
                         p.cumDelay > 0 ? 'text-danger' : p.cumDelay < 0 ? 'text-success' : 'text-muted-foreground')}>

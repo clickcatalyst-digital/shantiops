@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getMyWork } from '@/lib/data';
+import { getMyWork, getBomWork } from '@/lib/data';
 import { getSessionUser, isCustomer, isManager, isHead, headDepartments, canAccessDepartment, roleHome } from '@/lib/auth';
 import StatusBadge from '@/components/StatusBadge';
 import DispatchBoard from '@/components/DispatchBoard';
@@ -52,6 +52,10 @@ export default async function Home({ searchParams }) {
   }
 
   const groups = await getMyWork(user, deptFilter);
+  // Open Master-BOM work for BOM-owning departments (Engineering: missing BOMs; Procurement /
+  // Stores / Production: items not yet closed). Fills the once-empty Engineering attention list.
+  const bomWork = deptFilter && deptFilter !== 'Engineering' && !['Procurement', 'Stores', 'Production'].includes(deptFilter)
+    ? [] : await getBomWork(user);
   const title = deptFilter || (manager ? "Today's Factory" : 'My Work');
   const total = groups.reduce((a, g) => a + g.items.length, 0);
   const allItems = groups.flatMap(g => g.items);
@@ -77,6 +81,26 @@ export default async function Home({ searchParams }) {
         <StatChip label="blocked" value={chips.blocked} dot="bg-blocked" />
         <StatChip label="due soon" value={chips.dueSoon} dot="bg-warning" />
       </div>
+
+      {bomWork.length > 0 && (
+        <Card>
+          <CardHeader className="py-4"><CardTitle className="text-base">Master BOM</CardTitle></CardHeader>
+          <CardContent className="flex flex-col divide-y pt-0">
+            {bomWork.map(w => (
+              <Link key={w.id} href={`/projects/${w.id}`}
+                className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5 text-sm transition-colors hover:bg-muted/40 -mx-2 px-2 rounded">
+                <span className="font-medium text-primary">{w.project_no}</span>
+                <span className="text-muted-foreground">{w.customer_name}</span>
+                <span className="ml-auto text-xs tnum">
+                  {w.total === 0
+                    ? <span className="text-warning font-medium">BOM not uploaded</span>
+                    : <span className="text-muted-foreground">{w.open} open item{w.open !== 1 ? 's' : ''}</span>}
+                </span>
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {groups.length === 0 ? (
         <Card><CardContent className="py-10 text-center text-muted-foreground">

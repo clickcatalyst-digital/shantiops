@@ -1,16 +1,18 @@
 'use client';
 
-// Engineering's Bill of Materials panel (§ dept-scoped view): upload a flat BOM + the BOM table with
-// Pending/Packed reconciliation status. Generating a packing list from the BOM is a Dispatch action
-// (see PackingPanel), not here.
+// Engineering's Bill of Materials panel: the shared BOM table (full column set), PMB .xlsx import
+// with preview, import/revision history with original-file downloads, and the original paste flow
+// kept as a fallback for non-Excel BOMs. Generating a packing list from the BOM stays a Dispatch
+// action (PackingPanel).
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, showToast } from '@/lib/client';
+import { api, showToast, formatDate } from '@/lib/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import BomTable from './BomTable';
+import BomImport from './BomImport';
 
 function parseBom(text) {
   return text.split('\n').map(l => l.trim()).filter(Boolean).map(line => {
@@ -19,13 +21,12 @@ function parseBom(text) {
   }).filter(r => r.material_description);
 }
 
-export default function BomPanel({ projectId, bom, pending, canUpload }) {
+export default function BomPanel({ projectId, bom, pending, canUpload, editableFields = [], imports = [] }) {
   const router = useRouter();
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
-  const pendingIds = new Set(pending.map(p => p.id));
 
-  async function upload(e) {
+  async function uploadPaste(e) {
     e.preventDefault();
     const rows = parseBom(text);
     if (!rows.length) return showToast('Paste at least one BOM line', 'error');
@@ -41,47 +42,43 @@ export default function BomPanel({ projectId, bom, pending, canUpload }) {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex-row items-center justify-between">
         <CardTitle>Bill of Materials</CardTitle>
+        {canUpload && <BomImport projectId={projectId} />}
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {bom.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No BOM uploaded yet.</p>
+          <p className="text-sm text-muted-foreground">
+            No BOM yet — import the project's PMB workbook (.xlsx) or paste rows below.
+          </p>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow><TableHead>#</TableHead><TableHead>Description</TableHead><TableHead>MOC</TableHead><TableHead>Size / Spec</TableHead><TableHead>Status</TableHead></TableRow>
-              </TableHeader>
-              <TableBody>
-                {bom.map((b, i) => {
-                  const isPending = pendingIds.has(b.id);
-                  return (
-                    <TableRow key={b.id}>
-                      <TableCell className="tnum">{i + 1}</TableCell>
-                      <TableCell className="font-medium">{b.material_description}</TableCell>
-                      <TableCell>{b.moc || '—'}</TableCell>
-                      <TableCell>{b.size_spec || '—'}</TableCell>
-                      <TableCell>
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${isPending ? 'bg-warning/10 text-warning ring-warning/20' : 'bg-success/10 text-success ring-success/20'}`}>
-                          {isPending ? 'Pending' : 'Packed'}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+          <BomTable projectId={projectId} bom={bom} pendingIds={pending.map(p => p.id)}
+            editableFields={editableFields} />
+        )}
+
+        {imports.length > 0 && (
+          <div className="flex flex-col gap-1 text-sm">
+            <span className="font-medium">Import history</span>
+            {imports.map(imp => (
+              <div key={imp.id} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-muted-foreground">
+                <span className="tnum">Rev {imp.revision}</span>
+                <a href={`/api/bom-imports/${imp.id}/file`} className="text-primary hover:underline">{imp.filename}</a>
+                <span className="text-xs">{formatDate(imp.created_at)} · by {imp.imported_by}</span>
+              </div>
+            ))}
           </div>
         )}
 
         {canUpload && (
-          <form onSubmit={upload} className="flex flex-col gap-2">
-            <Label>Upload BOM <span className="text-muted-foreground">— one item per line: Description, MOC, Size/Spec</span></Label>
-            <Textarea rows={4} value={text} onChange={e => setText(e.target.value)}
-              placeholder={'Control Panel, CS, As per drawing\nID Fan with Motor, MS, CFM:3000 · 5 HP'} />
-            <div><Button disabled={busy}>{busy ? 'Uploading…' : 'Upload BOM'}</Button></div>
-          </form>
+          <details>
+            <summary className="cursor-pointer text-sm text-muted-foreground">Paste rows instead</summary>
+            <form onSubmit={uploadPaste} className="mt-2 flex flex-col gap-2">
+              <Label>One item per line: Description, MOC, Size/Spec</Label>
+              <Textarea rows={4} value={text} onChange={e => setText(e.target.value)}
+                placeholder={'Control Panel, CS, As per drawing\nID Fan with Motor, MS, CFM:3000 · 5 HP'} />
+              <div><Button disabled={busy}>{busy ? 'Adding…' : 'Add rows'}</Button></div>
+            </form>
+          </details>
         )}
       </CardContent>
     </Card>

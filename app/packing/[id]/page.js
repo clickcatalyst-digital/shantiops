@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { getPackingDetail } from '@/lib/data';
-import { getSessionUser, isCustomer, canAccessDepartment, roleHome } from '@/lib/auth';
+import { getSessionUser, isCustomer, canAccessDepartment, canAccessProject, roleHome } from '@/lib/auth';
 import PackingDetail from '@/components/PackingDetail';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,7 @@ export default async function PackingPage({ params }) {
 
   if (isCustomer(user)) {
     // A customer may only see their own order's list, and only once it's past draft (≥ Ready).
-    if (String(data.list.project_id) !== String(user.project_id) || data.list.status === 'draft') {
+    if (!canAccessProject(user, data.list.project_id) || data.list.status === 'draft') {
       redirect(roleHome(user));
     }
   } else if (!canEdit) {

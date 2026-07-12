@@ -12,6 +12,9 @@ export async function POST(req) {
   if (!user.active) {
     return NextResponse.json({ error: 'This account has been deactivated' }, { status: 403 });
   }
+  if (user.pending) {
+    return NextResponse.json({ error: 'Your account is awaiting approval' }, { status: 403 });
+  }
   const res = NextResponse.json({ ok: true, role: user.role });
   res.cookies.set(COOKIE_OPTS.name, signToken(user), COOKIE_OPTS);
   return res;

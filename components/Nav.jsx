@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import {
   SunIcon, MoonIcon, SettingsIcon, LogOutIcon, LayoutGridIcon, BarChart3Icon,
-  LayoutDashboardIcon, FolderKanbanIcon, PackageIcon, ShieldCheckIcon,
+  LayoutDashboardIcon, FolderKanbanIcon, PackageIcon, ShieldCheckIcon, InfoIcon,
 } from 'lucide-react';
 import { DEPARTMENTS } from '@/lib/milestones';
 import { cn } from '@/lib/utils';
@@ -23,7 +23,7 @@ export default function Nav({ user }) {
   const [theme, setTheme] = useState('light');
   const [brand, setBrand] = useState({ prefix: 'SB'});
 
-  const isPMUser = user && ['admin', 'manager'].includes(user.role);
+  const isPMUser = user && ['admin', 'manager', 'executive'].includes(user.role);
   const departments = user?.departments || [];
   // Departments the user can browse: PM → all; head → their granted list. Packing lives under Dispatch.
   const accessibleDepts = isPMUser ? DEPARTMENTS : departments;
@@ -100,6 +100,9 @@ export default function Nav({ user }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-1">
+            <Button asChild variant="ghost" size="icon-sm" aria-label="Help">
+              <Link href="/help"><InfoIcon /></Link>
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon-sm" aria-label="Menu"><SettingsIcon /></Button>

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getCustomerView } from '@/lib/data';
-import { getSessionUser, isCustomer, roleHome } from '@/lib/auth';
+import { getSessionUser, isCustomer, canAccessProject, roleHome } from '@/lib/auth';
 import { formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import LogoutButton from '@/components/LogoutButton';
@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function Portal({ params }) {
   const user = getSessionUser();
-  if (isCustomer(user) && String(user.project_id) !== String(params.id)) redirect(roleHome(user));
+  if (isCustomer(user) && !canAccessProject(user, params.id)) redirect(roleHome(user));
 
   const data = await getCustomerView(params.id);
   if (!data) notFound();
@@ -26,12 +26,16 @@ export default async function Portal({ params }) {
       <header className="border-b bg-background/80 backdrop-blur">
         <div className="container flex h-14 items-center justify-between">
           <div className="text-base font-bold tracking-tight">SHANTI<span className="text-primary">BOILERS</span></div>
-          <LogoutButton />
+          <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" size="sm"><Link href="/help">Help</Link></Button>
+            <LogoutButton />
+          </div>
         </div>
       </header>
 
       <main className="container flex max-w-3xl flex-col gap-6 py-8">
         <div>
+          {isCustomer(user) && <Link href="/portal" className="text-sm text-muted-foreground hover:underline">← My Orders</Link>}
           <h1 className="text-2xl font-bold tracking-tight">Order {project.project_no}</h1>
           <p className="text-sm text-muted-foreground">
             {project.description || 'Boiler order'} · Estimated dispatch {estDispatch ? formatDate(estDispatch) : 'TBD'}

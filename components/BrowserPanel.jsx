@@ -42,7 +42,7 @@ function timeLeft(expiresAt) {
 // ponytail: 5s poll + router.refresh() — matches the DevicesPanel pattern.
 export default function BrowserPanel({ user, initial }) {
   const router = useRouter();
-  const isPM = user.role === 'admin' || user.role === 'manager';
+  const isPM = ['admin', 'manager', 'executive'].includes(user.role);
 
   useEffect(() => {
     const t = setInterval(() => router.refresh(), 5000);

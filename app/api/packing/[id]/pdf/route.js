@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getPackingDetail } from '@/lib/data';
-import { getSessionUser, isCustomer, canAccessDepartment } from '@/lib/auth';
+import { getSessionUser, isCustomer, canAccessDepartment, canAccessProject } from '@/lib/auth';
 import { renderPackingPdf } from '@/lib/packing-pdf';
 
 export const runtime = 'nodejs';
@@ -13,7 +13,7 @@ export async function GET(req, { params }) {
   // Same access rules as the packing detail page: Dispatch/PM can always get it; a customer only
   // for their own order once it's past draft.
   if (isCustomer(user)) {
-    if (String(data.list.project_id) !== String(user.project_id) || data.list.status === 'draft') {
+    if (!canAccessProject(user, data.list.project_id) || data.list.status === 'draft') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
   } else if (!canAccessDepartment(user, 'Dispatch')) {

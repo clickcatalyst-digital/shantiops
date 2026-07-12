@@ -8,7 +8,7 @@ import { issueEnrollCode } from '@/lib/enroll';
 
 export async function POST(req) {
   const user = getSessionUser();
-  if (user?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!['admin', 'executive'].includes(user?.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const b = await req.json();
 
   const name = String(b.name || '').trim().slice(0, 64);
@@ -27,7 +27,7 @@ export async function POST(req) {
 // Kill switch / reactivate.
 export async function PATCH(req) {
   const user = getSessionUser();
-  if (user?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!['admin', 'executive'].includes(user?.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const b = await req.json();
   const machine = await queryOne('SELECT * FROM machines WHERE id = ?', [Number(b.id)]);
   if (!machine) return NextResponse.json({ error: 'Not found' }, { status: 404 });

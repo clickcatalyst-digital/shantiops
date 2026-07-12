@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server';
 import { execute, queryAll, queryOne, nextNumber } from '@/lib/db';
 import { getSessionUser, requireDepartment } from '@/lib/auth';
 import { getProjectBom } from '@/lib/data';
+import { audit } from '@/lib/usb';
 
 // Auto-generate a DRAFT packing list from a project's still-pending BOM lines. Prefills
-// material_description / moc / size_spec from each BOM row; leaves IBR No / Item Code / Box / Qty /
-// Make blank for the Dispatch head to fill. Only pending lines are pulled (handles partial dispatch).
+// material_description / moc / size_spec / make from each BOM row, and qty when the BOM's free-text
+// qty starts with a number ("2 Nos" → 2); leaves IBR No / Item Code / Box for the Dispatch head.
+// Only pending lines are pulled (handles partial dispatch).
 export async function POST(req) {
   const user = getSessionUser();
   const denied = requireDepartment(user, 'Dispatch');
@@ -29,11 +31,13 @@ export async function POST(req) {
 
   let s = 1;
   for (const b of pending) {
+    const qty = parseFloat(b.qty_text) || 1; // "2 Nos" → 2; non-numeric ("AS REQD") → 1
     await execute(
-      `INSERT INTO packing_items (packing_list_id, bom_item_id, s_no, material_description, moc, size_spec, qty, unit)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [listId, b.id, s++, b.material_description, b.moc || null, b.size_spec || null, 1, "No's"]
+      `INSERT INTO packing_items (packing_list_id, bom_item_id, s_no, material_description, moc, size_spec, make, qty, unit)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [listId, b.id, s++, b.material_description, b.moc || null, b.size_spec || null, b.make || null, qty, "No's"]
     );
   }
+  await audit('packing_created', { actor: user.username, detail: `${packing_no} · project ${project_id} · ${pending.length} items` });
   return NextResponse.json({ id: listId, packing_no, items: pending.length });
 }

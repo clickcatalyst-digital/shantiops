@@ -1,12 +1,14 @@
 import { notFound, redirect } from 'next/navigation';
-import { getProjectDetail, getProjectBom, getProjectPackingLists } from '@/lib/data';
+import { getProjectDetail, getProjectBom, getProjectPackingLists, getBomRollup } from '@/lib/data';
 import { getSessionUser, isCustomer, isPM, isHead, headDepartments, canAccessDepartment, roleHome } from '@/lib/auth';
 import { DEPARTMENTS } from '@/lib/milestones';
+import { editableBomFields } from '@/lib/bom-fields.mjs';
 import ProjectHeader from '@/components/ProjectHeader';
 import TodayBand from '@/components/TodayBand';
 import PortfolioDelayTimeline from '@/components/PortfolioDelayTimeline';
 import DepartmentPanel from '@/components/DepartmentPanel';
 import ProjectDepartmentTabs from '@/components/ProjectDepartmentTabs';
+import BomProgress from '@/components/BomProgress';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,8 +19,9 @@ export default async function ProjectDetail({ params }) {
   const data = await getProjectDetail(params.id);
   if (!data) notFound();
   const { project, milestones, health, blocker } = data;
-  const { bom, pending } = await getProjectBom(params.id);
+  const { bom, pending, imports } = await getProjectBom(params.id);
   const packingLists = await getProjectPackingLists(params.id);
+  const bomRollup = await getBomRollup(params.id);
 
   const pm = isPM(user);
   const head = isHead(user);
@@ -32,6 +35,8 @@ export default async function ProjectDetail({ params }) {
     milestones, head, projectId: project.id, bom, pending, packingLists,
     canUploadBom: canAccessDepartment(user, 'Engineering'),
     canPack: canAccessDepartment(user, 'Dispatch'),
+    bomFields: editableBomFields(user), // field-level BOM edit scope (enforced again in the API)
+    bomImports: imports,
   };
 
   return (
@@ -47,6 +52,9 @@ export default async function ProjectDetail({ params }) {
           shown to every internal role (heads get the full chain as read-only context). Full width
           since the stage bar needs the room. */}
       <PortfolioDelayTimeline projects={[{ ...project, milestones }]} />
+
+      {/* Master BOM procurement rollup — context for every internal role; renders nothing if no BOM. */}
+      <BomProgress rollup={bomRollup} />
 
       {pm ? (
         // PM/admin: the all-departments tabbed card.

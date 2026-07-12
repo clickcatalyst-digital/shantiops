@@ -64,7 +64,7 @@ function isOnline(sqliteUtc) {
 // ponytail: request-level 5s poll + router.refresh() — no realtime infra exists in this app yet.
 export default function DevicesPanel({ user, initial, employees }) {
   const router = useRouter();
-  const isPM = user.role === 'admin' || user.role === 'manager';
+  const isPM = ['admin', 'manager', 'executive'].includes(user.role);
 
   useEffect(() => {
     const t = setInterval(() => router.refresh(), 5000);
@@ -115,7 +115,7 @@ export default function DevicesPanel({ user, initial, employees }) {
         </CardContent>
       </Card>
 
-      {user.role === 'admin' && <MachinesCard machines={machines} employees={employees} router={router} />}
+      {['admin', 'executive'].includes(user.role) && <MachinesCard machines={machines} employees={employees} router={router} />}
     </div>
   );
 }

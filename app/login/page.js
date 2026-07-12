@@ -18,7 +18,7 @@ const DEMO_GROUPS = [
   {
     label: 'Demo Accounts',
     icon: Users,
-    accounts: ['pm', 'admin', 'executive'],
+    accounts: ['manager', 'executive'],
   },
   {
     label: 'Department Heads',

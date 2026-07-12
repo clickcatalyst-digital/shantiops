@@ -4,19 +4,18 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Table({
-  className,
-  ...props
-}) {
+// ref forwards to the actual scrolling container (not the <table> itself) — callers that need
+// to drive horizontal scroll programmatically (e.g. "scroll right" buttons) attach it here.
+const Table = React.forwardRef(function Table({ className, ...props }, ref) {
   return (
-    <div data-slot="table-container" className="relative w-full overflow-x-auto">
+    <div ref={ref} data-slot="table-container" className="relative w-full overflow-x-auto">
       <table
         data-slot="table"
         className={cn("w-full caption-bottom text-sm", className)}
         {...props} />
     </div>
   );
-}
+});
 
 function TableHeader({
   className,

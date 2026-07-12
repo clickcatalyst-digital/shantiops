@@ -4,7 +4,7 @@
 // rows; what differs is `editableFields` (from BOM_FIELD_OWNERS via the server). The inline status
 // select is the high-frequency action; everything else edits through a small dialog showing only
 // the viewer's editable columns. Enforcement lives in the PATCH route — this UI is convenience.
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, showToast } from '@/lib/client';
 import { BOM_STATUSES } from '@/lib/bom-fields.mjs';
@@ -14,6 +14,8 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/solid';
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 
 const FIELD_LABELS = {
   section: 'Section', group_label: 'Group', material_description: 'Description',
@@ -37,7 +39,14 @@ export default function BomTable({ projectId, bom, pendingIds = [], editableFiel
   const [statusFilter, setStatusFilter] = useState('all');
   const [editing, setEditing] = useState(null); // item row | {__new, section} | null
   const [busy, setBusy] = useState(false);
+  const scrollerRef = useRef(null);
   const packed = new Set(bom.map(b => b.id).filter(id => !pendingIds.includes(id)));
+
+  // One column's worth of horizontal scroll per click — cheaper than hunting for the scrollbar
+  // at the bottom of a long page.
+  function scrollByCols(dir) {
+    scrollerRef.current?.scrollBy({ left: dir * 220, behavior: 'smooth' });
+  }
 
   const canInlineStatus = editableFields.includes('purchase_status');
   const canStructure = editableFields.includes('material_description');
@@ -120,6 +129,15 @@ export default function BomTable({ projectId, bom, pendingIds = [], editableFiel
           </SelectContent>
         </Select>
         <span className="text-xs text-muted-foreground tnum">{rows.length} of {bom.length} items</span>
+        {/* Jump the wide table left/right without hunting for the scrollbar at the bottom of the page. */}
+        <div className="flex items-center gap-1">
+          <Button size="icon-sm" variant="outline" aria-label="Scroll table left" onClick={() => scrollByCols(-1)}>
+            <ChevronLeftIcon />
+          </Button>
+          <Button size="icon-sm" variant="outline" aria-label="Scroll table right" onClick={() => scrollByCols(1)}>
+            <ChevronRightIcon />
+          </Button>
+        </div>
         {canStructure && (
           <Button size="sm" variant="outline" className="ml-auto"
             onClick={() => setEditing({ __new: true, section: lastSection || '' })}>
@@ -128,16 +146,18 @@ export default function BomTable({ projectId, bom, pendingIds = [], editableFiel
         )}
       </div>
 
-      <div className="overflow-x-auto">
-        <Table>
+      <Table ref={scrollerRef}>
           <TableHeader>
             <TableRow>
+              {/* Sticky group: # · Description · Status · Packing · Actions. Fixed widths so the
+                  left offsets stack (3+16=19, +8=27, +6=33rem). Status/Packing/Actions pin at md+
+                  only — the full ~650px group would exceed a phone viewport. */}
               <TableHead className="sticky left-0 z-10 w-12 bg-background">#</TableHead>
-              <TableHead className="sticky left-12 z-10 min-w-48 max-w-72 bg-background border-r">Description</TableHead>
+              <TableHead className="sticky left-12 z-10 w-64 min-w-64 max-w-64 bg-background">Description</TableHead>
+              <TableHead className="w-32 bg-background md:sticky md:left-[19rem] md:z-10">Status</TableHead>
+              <TableHead className={`w-24 bg-background md:sticky md:left-[27rem] md:z-10 ${dialogFields.length ? '' : 'md:border-r'}`}>Packing</TableHead>
+              {(dialogFields.length > 0) && <TableHead className="w-20 bg-background md:sticky md:left-[33rem] md:z-10 md:border-r" />}
               {COLUMNS.map(c => <TableHead key={c}>{FIELD_LABELS[c]}</TableHead>)}
-              <TableHead>Status</TableHead>
-              <TableHead>Packing</TableHead>
-              {(dialogFields.length > 0) && <TableHead />}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -154,11 +174,8 @@ export default function BomTable({ projectId, bom, pendingIds = [], editableFiel
             ) : (
               <TableRow key={r.id}>
                 <TableCell className="sticky left-0 z-10 w-12 bg-background tnum text-muted-foreground">{bom.indexOf(r) + 1}</TableCell>
-                <TableCell className="sticky left-12 z-10 min-w-48 max-w-72 bg-background border-r font-medium">{r.material_description}</TableCell>
-                {COLUMNS.map(c => (
-                  <TableCell key={c} className="whitespace-nowrap text-muted-foreground">{r[c] || '—'}</TableCell>
-                ))}
-                <TableCell>
+                <TableCell className="sticky left-12 z-10 w-64 min-w-64 max-w-64 break-words bg-background font-medium">{r.material_description}</TableCell>
+                <TableCell className="w-32 bg-background md:sticky md:left-[19rem] md:z-10">
                   {canInlineStatus ? (
                     <Select value={r.purchase_status || 'none'} onValueChange={v => setStatus(r, v)}>
                       <SelectTrigger className="h-7 w-28 text-xs"><SelectValue /></SelectTrigger>
@@ -173,24 +190,32 @@ export default function BomTable({ projectId, bom, pendingIds = [], editableFiel
                     </span>
                   )}
                 </TableCell>
-                <TableCell>
+                <TableCell className={`w-24 bg-background md:sticky md:left-[27rem] md:z-10 ${dialogFields.length ? '' : 'md:border-r'}`}>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${packed.has(r.id) ? 'bg-success/10 text-success ring-success/20' : 'bg-warning/10 text-warning ring-warning/20'}`}>
                     {packed.has(r.id) ? 'Packed' : 'Pending'}
                   </span>
                 </TableCell>
                 {dialogFields.length > 0 && (
-                  <TableCell className="whitespace-nowrap">
-                    <Button size="sm" variant="ghost" onClick={() => setEditing(r)}>Edit</Button>
-                    {canStructure && (
-                      <Button size="sm" variant="ghost" className="text-danger" onClick={() => remove(r)}>Delete</Button>
-                    )}
+                  <TableCell className="w-20 whitespace-nowrap bg-background md:sticky md:left-[33rem] md:z-10 md:border-r">
+                    <div className="flex items-center gap-1">
+                      <Button size="icon-sm" variant="ghost" aria-label="Edit item" onClick={() => setEditing(r)}>
+                        <PencilIcon className="size-3.5" />
+                      </Button>
+                      {canStructure && (
+                        <Button size="icon-sm" variant="ghost" className="text-danger" aria-label="Delete item" onClick={() => remove(r)}>
+                          <TrashIcon className="size-3.5" />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 )}
+                {COLUMNS.map(c => (
+                  <TableCell key={c} className="whitespace-nowrap text-muted-foreground">{r[c] || '—'}</TableCell>
+                ))}
               </TableRow>
             ))}
           </TableBody>
-        </Table>
-      </div>
+      </Table>
 
       <Dialog open={!!editing} onOpenChange={o => !o && setEditing(null)}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">

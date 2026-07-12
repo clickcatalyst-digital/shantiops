@@ -8,10 +8,17 @@ import { ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { effectiveStatus } from '@/lib/sla';
-// import { cumulativeDelay, nodeColorClass } from '@/lib/delay';
+import { MILESTONE_TEMPLATE } from '@/lib/milestones';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { cumulativeDelay, nodeColorClass, milestoneDelta, deltaLabel, statusPillClasses } from '@/lib/delay';
+
+// One source of truth for the row layout: chevron / project name / 1fr bar track / delay.
+// The header strip and the stripe overlay both derive from this — if the tracks change, update
+// TRACK_LEFT/TRACK_RIGHT below to match (px-2 pad + col widths + gap-3 gaps).
+const ROW_GRID = 'grid-cols-[1.1rem_9rem_1fr_4rem] gap-3 px-2';
+const TRACK_LEFT = 'left-[12.1rem]';  // 0.5 (px-2) + 1.1 + 0.75 (gap) + 9 + 0.75 (gap)
+const TRACK_RIGHT = 'right-[5.25rem]'; // 0.5 (px-2) + 4 + 0.75 (gap)
 
 function formatDate(d) {
   if (!d) return null;
@@ -33,8 +40,9 @@ function Row({ project }) {
   const origDate = lastMs?.planned_end ? formatDate(lastMs.planned_end) : null;
 
   return (
-    <div className="rounded-lg transition-colors hover:bg-muted/50">
-      <div className="grid grid-cols-[1.1rem_9rem_1fr_4rem] items-center gap-3 px-2 py-2">
+    // relative: paints the row's hover bg and bars above the column-stripe overlay behind it.
+    <div className="relative rounded-lg transition-colors hover:bg-muted/50">
+      <div className={cn('grid items-center py-2', ROW_GRID)}>
         <button
           type="button"
           onClick={() => setExpanded(e => !e)}
@@ -146,28 +154,60 @@ export default function PortfolioDelayTimeline({ projects }) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex w-full flex-row flex-wrap items-center justify-between gap-2">
-          <CardTitle>Milestone Tracker</CardTitle>
-          <div className="hidden flex-wrap items-center gap-3 sm:flex">
-            {LEGEND.map(([c, label]) => (
-              <span key={label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span className={cn('size-2 rounded-full', c)} />{label}
-              </span>
-            ))}
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span className="relative inline-block h-3 w-2">
-                <span className="absolute left-1/2 top-0 h-full w-0.5 -translate-x-1/2 bg-foreground/80" />
-                <span className="absolute left-1/2 top-0 size-1.5 -translate-x-1/2 -translate-y-1/4 rounded-full bg-foreground ring-2 ring-background" />
-              </span>
-              Today
-            </span>
-          </div>
-        </div>
+        <CardTitle>Milestone Tracker</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-1">
-        {rows.length === 0
-          ? <p className="py-6 text-center text-sm text-muted-foreground">No scheduled projects yet.</p>
-          : rows.map(p => <Row key={p.id} project={p} />)}
+        {rows.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">No scheduled projects yet.</p>
+        ) : (
+          <>
+            {/* Column headers — short stage names. Every project seeds from the same 25-stage
+                template in the same order, so one header reads across all rows. gap-px matches
+                the bar segments' gap so header cells, stripes and segments share one stride. */}
+            <div className={cn('hidden sm:grid', ROW_GRID)} aria-hidden>
+              <div /><div />
+              <div className="flex items-end gap-px">
+                {MILESTONE_TEMPLATE.map((m, i) => (
+                  <div key={m.key} title={m.label}
+                    className={cn('flex h-16 flex-1 items-end justify-center overflow-hidden rounded-t-sm pb-1',
+                      i % 2 === 1 && 'bg-foreground/10')}>
+                    <span className="rotate-180 truncate text-[9px] leading-none text-muted-foreground [writing-mode:vertical-rl]">
+                      {m.short}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div />
+            </div>
+
+            <div className="relative">
+              {/* Faint alternating column stripes behind every row, aligned to the bar track.
+                  ponytail: assumes the canonical template — a project with custom milestones still
+                  renders its own bars correctly, it just reads against the standard header. */}
+              <div className={cn('pointer-events-none absolute inset-y-0 hidden gap-px sm:flex', TRACK_LEFT, TRACK_RIGHT)} aria-hidden>
+                {MILESTONE_TEMPLATE.map((m, i) => (
+                  <div key={m.key} className={cn('flex-1', i % 2 === 1 && 'bg-foreground/[0.06]')} />
+                ))}
+              </div>
+              {rows.map(p => <Row key={p.id} project={p} />)}
+            </div>
+
+            <div className="hidden flex-wrap items-center justify-end gap-3 pt-2 sm:flex">
+              {LEGEND.map(([c, label]) => (
+                <span key={label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className={cn('size-2 rounded-full', c)} />{label}
+                </span>
+              ))}
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="relative inline-block h-3 w-2">
+                  <span className="absolute left-1/2 top-0 h-full w-0.5 -translate-x-1/2 bg-foreground/80" />
+                  <span className="absolute left-1/2 top-0 size-1.5 -translate-x-1/2 -translate-y-1/4 rounded-full bg-foreground ring-2 ring-background" />
+                </span>
+                Today
+              </span>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

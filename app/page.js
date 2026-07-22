@@ -5,7 +5,7 @@ import { getSessionUser, isCustomer, isManager, isHead, headDepartments, canAcce
 import StatusBadge from '@/components/StatusBadge';
 import DispatchBoard from '@/components/DispatchBoard';
 import PageHeader from '@/components/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardAction } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/format';
 import { ArrowRightIcon } from 'lucide-react';
@@ -110,12 +110,12 @@ export default async function Home({ searchParams }) {
         <div className="grid items-start gap-4 md:grid-cols-2 2xl:grid-cols-3">
           {groups.map(g => (
             <Card key={g.items[0].project_id}>
-              <CardHeader className="flex-row items-center justify-between gap-2 py-4">
+              <CardHeader className="py-4">
                 <CardTitle className="text-base">
                   <Link href={`/projects/${g.items[0].project_id}`} className="text-primary hover:underline">{g.project_no}</Link>
                   <span className="text-muted-foreground font-normal"> · {g.customer_name}</span>
                 </CardTitle>
-                <span className="text-xs text-muted-foreground tnum">{g.items.length} item{g.items.length !== 1 ? 's' : ''}</span>
+                <CardAction className="text-xs text-muted-foreground tnum">{g.items.length} item{g.items.length !== 1 ? 's' : ''}</CardAction>
               </CardHeader>
               <CardContent className="flex flex-col divide-y pt-0">
                 {g.items.map(m => (

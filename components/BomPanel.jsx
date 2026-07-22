@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, showToast, formatDate } from '@/lib/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardAction } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -42,9 +42,9 @@ export default function BomPanel({ projectId, bom, pending, canUpload, editableF
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between">
+      <CardHeader>
         <CardTitle>Bill of Materials</CardTitle>
-        {canUpload && <BomImport projectId={projectId} />}
+        {canUpload && <CardAction><BomImport projectId={projectId} /></CardAction>}
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {bom.length === 0 ? (

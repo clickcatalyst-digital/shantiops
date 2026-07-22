@@ -1,16 +1,16 @@
 // Per-section BOM procurement rollup — closed (green) / transit (amber) / pending (muted) stacked
 // bars, same token colors as the milestone status pills. Pure props; renders server- or client-side.
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardAction } from '@/components/ui/card';
 
 export default function BomProgress({ rollup }) {
   if (!rollup || !rollup.total) return null;
   return (
     <Card>
-      <CardHeader className="flex-row items-baseline justify-between">
+      <CardHeader>
         <CardTitle>Master BOM</CardTitle>
-        <span className="text-sm text-muted-foreground">
+        <CardAction className="text-sm text-muted-foreground">
           <span className="font-semibold text-foreground tnum">{rollup.closedPct}%</span> of {rollup.total} items closed
-        </span>
+        </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-2.5">
         {rollup.sections.map(s => (

@@ -1,8 +1,10 @@
 import './globals.css';
 import Nav from '@/components/Nav';
+import DeviceSetupGate from '@/components/DeviceSetupGate';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { getSessionUser, isInternal } from '@/lib/auth';
+import { getSessionUser, isInternal, isHead } from '@/lib/auth';
+import { getMyMachine } from '@/lib/data';
 
 export const metadata = {
   title: `${process.env.BRAND_PREFIX || 'SB'} Ops — Shanti Boilers`,
@@ -12,16 +14,23 @@ export const metadata = {
 // Set the theme before first paint so there's no light→dark flash.
 const themeInit = `(function(){try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`;
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
   const user = getSessionUser();
+  // Functional heads only (§ operator role) — PMs must be able to log in unblocked, since
+  // they're the ones who register a head's machine in the first place.
+  const machine = isHead(user) ? await getMyMachine(user.id) : null;
+  const needsDeviceSetup = isHead(user) && !(machine?.enrolled_at || machine?.last_seen);
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: themeInit }} /></head>
       <body className="min-h-screen bg-background text-foreground">
         <TooltipProvider delayDuration={200}>
-          {isInternal(user) && <Nav user={user} />}
+          {isInternal(user) && !needsDeviceSetup && <Nav user={user} />}
           {/* Extra bottom padding on mobile so content clears the fixed bottom tab bar (internal only). */}
-          <div className={isInternal(user) ? 'pb-20 md:pb-0' : ''}>{children}</div>
+          <div className={isInternal(user) ? 'pb-20 md:pb-0' : ''}>
+            {needsDeviceSetup ? <DeviceSetupGate machine={machine} /> : children}
+          </div>
         </TooltipProvider>
         <Toaster position="top-center" richColors />
       </body>

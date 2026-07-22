@@ -6,7 +6,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api, showToast } from '@/lib/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardAction } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 const STATUS_TONE = {
@@ -31,15 +31,15 @@ export default function PackingPanel({ projectId, pending, packingLists, canPack
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between gap-2">
+      <CardHeader>
         <CardTitle>Packing &amp; Dispatch</CardTitle>
         {canPack && pending.length > 0 && (
-          <div className="flex gap-2">
+          <CardAction className="flex gap-2">
             <Button size="sm" disabled={busy} onClick={generate}>Generate Draft Packing List</Button>
             <Button asChild size="sm" variant="outline">
               <a href={`/api/projects/${projectId}/pending-pdf`} target="_blank" rel="noreferrer">Pending PDF</a>
             </Button>
-          </div>
+          </CardAction>
         )}
       </CardHeader>
       <CardContent className="flex flex-col gap-3">

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import MilestoneCard from './MilestoneCard';
 import MilestoneGrid from './MilestoneGrid';
 import MilestoneDrawer from './MilestoneDrawer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardAction } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 export default function MilestoneBoard({ milestones, head = false }) {
@@ -14,12 +14,14 @@ export default function MilestoneBoard({ milestones, head = false }) {
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between gap-2">
+      <CardHeader>
         <CardTitle>Milestones</CardTitle>
         {!head && (
-          <Button variant="outline" size="sm" onClick={() => setBulk(b => !b)}>
-            {bulk ? 'Cards' : 'Bulk edit'}
-          </Button>
+          <CardAction>
+            <Button variant="outline" size="sm" onClick={() => setBulk(b => !b)}>
+              {bulk ? 'Cards' : 'Bulk edit'}
+            </Button>
+          </CardAction>
         )}
       </CardHeader>
       <CardContent>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, showToast } from '@/lib/client';
+import { api, showToast, INSTALLER_URL } from '@/lib/client';
 import { DEPARTMENTS } from '@/lib/milestones';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,9 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { UsbIcon, CopyIcon, DownloadIcon } from 'lucide-react';
-
-// Public GitHub release asset — same URL documented in docs/SETUP.md as AGENT_UPDATE_URL.
-const INSTALLER_URL = 'https://github.com/clickcatalyst-digital/shantiops/releases/latest/download/ShantiAgentSetup.exe';
 
 const STATUS_LABEL = {
   online: 'Online',

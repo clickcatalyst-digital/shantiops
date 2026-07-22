@@ -9,7 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { UsbIcon, CopyIcon } from 'lucide-react';
+import { UsbIcon, CopyIcon, DownloadIcon } from 'lucide-react';
+
+// Public GitHub release asset — same URL documented in docs/SETUP.md as AGENT_UPDATE_URL.
+const INSTALLER_URL = 'https://github.com/clickcatalyst-digital/shantiops/releases/latest/download/ShantiAgentSetup.exe';
 
 const STATUS_LABEL = {
   online: 'Online',
@@ -160,24 +163,34 @@ function RosterRow({ r, router, canRegisterMachine }) {
           {machine.name} · {machine.last_seen ? relativeTime(machine.last_seen) : 'never seen'} · {machine.agent_version ? `v${machine.agent_version}` : '—'}
         </div>
       )}
-      {canRegisterMachine && !machine && (
+      {canRegisterMachine && (!machine || enroll) && (
         <div className="flex flex-wrap items-end gap-2 pl-4">
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-xs">Machine name</Label>
-            <Input value={name} onChange={e => setName(e.target.value)} placeholder={`${r.username.toUpperCase()}-PC`} className="h-8 w-40" />
-          </div>
-          <Button size="sm" disabled={busy || !name} onClick={register}>
-            <UsbIcon data-icon="inline-start" />{busy ? 'Registering…' : 'Register machine'}
-          </Button>
+          {!machine && (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs">Machine name</Label>
+                <Input value={name} onChange={e => setName(e.target.value)} placeholder={`${r.username.toUpperCase()}-PC`} className="h-8 w-40" />
+              </div>
+              <Button size="sm" disabled={busy || !name} onClick={register}>
+                <UsbIcon data-icon="inline-start" />{busy ? 'Registering…' : 'Register machine'}
+              </Button>
+            </>
+          )}
           {enroll && (
-            <div className="flex items-center gap-2 text-xs">
-              <code className="rounded bg-muted px-2 py-0.5 font-bold tracking-widest">{enroll.code}</code>
-              <Button size="icon-sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(enroll.code); showToast('Copied'); }}>
-                <CopyIcon />
-              </Button>
-              <Button size="sm" variant="outline" asChild>
-                <a href={`/api/usb/machines/${enroll.id}/enroll-file`} download>Enroll file</a>
-              </Button>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2 text-xs">
+                <code className="rounded bg-muted px-2 py-0.5 font-bold tracking-widest">{enroll.code}</code>
+                <Button size="icon-sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(enroll.code); showToast('Copied'); }}>
+                  <CopyIcon />
+                </Button>
+                <Button size="sm" variant="outline" asChild>
+                  <a href={`/api/usb/machines/${enroll.id}/enroll-file`} download>Enroll file</a>
+                </Button>
+                <Button size="sm" variant="outline" asChild>
+                  <a href={INSTALLER_URL}><DownloadIcon data-icon="inline-start" />Installer</a>
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Same folder, run the installer — it self-enrolls.</p>
             </div>
           )}
         </div>

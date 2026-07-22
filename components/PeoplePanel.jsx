@@ -4,12 +4,16 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, showToast, INSTALLER_URL } from '@/lib/client';
 import { DEPARTMENTS } from '@/lib/milestones';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PM_GUIDE } from '@/components/help-content';
+import InfoPopover from '@/components/InfoPopover';
+import { Card, CardContent, CardHeader, CardTitle, CardAction } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { UsbIcon, CopyIcon, DownloadIcon } from 'lucide-react';
+
+const ONBOARDING_GUIDE = PM_GUIDE.find(g => g.title.startsWith('Onboarding a new employee'));
 
 const STATUS_LABEL = {
   online: 'Online',
@@ -44,7 +48,10 @@ export default function PeoplePanel({ user, initial }) {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Onboarding Roster</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Onboarding Roster</CardTitle>
+          {ONBOARDING_GUIDE && <CardAction><InfoPopover guide={ONBOARDING_GUIDE} /></CardAction>}
+        </CardHeader>
         <CardContent className="flex flex-col divide-y">
           {roster.length === 0 && <p className="text-sm text-muted-foreground">No one onboarded yet.</p>}
           {roster.map(r => (

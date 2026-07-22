@@ -6,6 +6,7 @@ import MilestoneBoard from './MilestoneBoard';
 import BomPanel from './BomPanel';
 import PackingPanel from './PackingPanel';
 import BomTable from './BomTable';
+import QcPanel from './QcPanel';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 const BOM_DEPARTMENTS = ['Procurement', 'Stores', 'Production'];
@@ -13,7 +14,7 @@ const BOM_DEPARTMENTS = ['Procurement', 'Stores', 'Production'];
 export default function DepartmentPanel({
   department, milestones, head = false,
   projectId, bom = [], pending = [], packingLists = [], canUploadBom = false, canPack = false,
-  bomFields = [], bomImports = [],
+  bomFields = [], bomImports = [], qcRecords = [], canEditQc = false,
 }) {
   const deptMs = milestones.filter(m => m.department === department);
   const showBom = BOM_DEPARTMENTS.includes(department) && bom.length > 0;
@@ -41,7 +42,11 @@ export default function DepartmentPanel({
         <PackingPanel projectId={projectId} pending={pending} packingLists={packingLists} canPack={canPack} />
       )}
 
-      {deptMs.length === 0 && department !== 'Engineering' && department !== 'Dispatch' && !showBom && (
+      {department === 'QC' && (
+        <QcPanel projectId={projectId} records={qcRecords} canEdit={canEditQc} />
+      )}
+
+      {deptMs.length === 0 && !['Engineering', 'Dispatch', 'QC'].includes(department) && !showBom && (
         <p className="text-sm text-muted-foreground">No {department} milestones on this project.</p>
       )}
     </div>

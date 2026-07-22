@@ -3,7 +3,7 @@
 import {
   FolderKanbanIcon, GanttChartIcon, ClipboardListIcon, PackageIcon, ShieldCheckIcon,
   UserPlusIcon, SlidersHorizontalIcon, WrenchIcon, TruckIcon, FlaskConicalIcon, PenToolIcon,
-  MapPinIcon, CircleGaugeIcon,
+  MapPinIcon, CircleGaugeIcon, KeyRoundIcon,
 } from 'lucide-react';
 
 export const PM_GUIDE = [
@@ -55,8 +55,18 @@ export const PM_GUIDE = [
     steps: [
       { title: '1. They register', body: 'On the login page, "Request access" — they pick Department Head or Project Manager and fill in their details.' },
       { title: '2. You approve', body: 'Approvals → People → Pending Registrations. Adjust their departments if needed, then Approve (or Reject).' },
-      { title: '3. Register their machine', body: 'Same tab, Onboarding Roster → Register machine → download the enroll file.' },
-      { title: '4. Drop it on their PC', body: 'Give them the enroll file (or the code) alongside the installer — no typing required. Their status dot goes green once the agent phones home.' },
+      { title: '3. Register their machine', body: 'Same tab, Onboarding Roster → Register machine — that\'s it on your end.' },
+      { title: '4. They set it up themselves', body: 'When they next log in from their PC, they\'re shown their Enroll file and Installer downloads directly — no files for you to send. Their status dot goes green once the agent phones home.' },
+    ],
+  },
+  {
+    title: 'Approving with your OTP code',
+    icon: KeyRoundIcon,
+    steps: [
+      { title: '1. One-time setup', body: 'Settings → USB Approval Authenticator — scan the QR code with any authenticator app. Required before you can approve anything.' },
+      { title: '2. When a request comes in', body: 'Approvals → Devices (or Browser) → enter your current 6-digit code next to the request → Approve.' },
+      { title: '3. The window it opens', body: 'Approval unlocks the device/site for a time-boxed window (default 15 min), then it re-locks automatically.' },
+      { title: 'Wrong code too many times', body: '5 failed attempts locks your code entry for 15 minutes — not the whole account, just approvals.' },
     ],
   },
   {

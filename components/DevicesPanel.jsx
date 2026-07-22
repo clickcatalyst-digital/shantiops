@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, showToast } from '@/lib/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PM_GUIDE } from '@/components/help-content';
+import InfoPopover from '@/components/InfoPopover';
+import { Card, CardContent, CardHeader, CardTitle, CardAction } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +14,8 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { UsbIcon, CopyIcon, ShieldCheckIcon } from 'lucide-react';
+
+const OTP_GUIDE = PM_GUIDE.find(g => g.title.startsWith('Approving with your OTP'));
 
 const STATUS_STYLE = {
   pending: 'text-warning bg-warning/10 ring-warning/20',
@@ -92,7 +96,10 @@ export default function DevicesPanel({ user, initial, employees }) {
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardHeader><CardTitle>Pending Approvals</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Pending Approvals</CardTitle>
+          {isPM && OTP_GUIDE && <CardAction><InfoPopover guide={OTP_GUIDE} /></CardAction>}
+        </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {pending.length === 0 && <p className="text-sm text-muted-foreground">Nothing waiting on you.</p>}
           {pending.map(r => <PendingCard key={r.id} r={r} riskIcon={risk(r)} router={router} />)}

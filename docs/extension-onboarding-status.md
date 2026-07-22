@@ -9,7 +9,7 @@ files yourself anymore.
    password, and pick Department Head (+ department) or Project Manager.
 2. They can't log in yet — this just puts them in your queue.
 
-## You, on your Mac (dashboard)
+## You, on the dashboard
 
 1. Approvals → People → **Pending Registrations** → find them → **Approve**.
 2. Same tab, scroll to **Onboarding Roster** → find them → **Register machine**.
@@ -29,7 +29,7 @@ That's it on your end for now — you're not sending them anything.
 4. It self-enrolls with no typing. The gate unlocks itself within seconds — no need
    to reload — and they're into the real app.
 
-## How you confirm it worked (back on your Mac)
+## How you confirm it worked
 
 - Check the dashboard — the machine shows online under Approvals → Devices within a
   few seconds.

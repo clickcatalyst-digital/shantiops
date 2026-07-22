@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
-import { getProjectDetail, getProjectBom, getProjectPackingLists, getBomRollup } from '@/lib/data';
+import { getProjectDetail, getProjectBom, getProjectPackingLists, getBomRollup, getQcRecords } from '@/lib/data';
 import { getSessionUser, isCustomer, isPM, isHead, headDepartments, canAccessDepartment, roleHome } from '@/lib/auth';
 import { DEPARTMENTS } from '@/lib/milestones';
 import { editableBomFields } from '@/lib/bom-fields.mjs';
@@ -22,6 +22,7 @@ export default async function ProjectDetail({ params }) {
   const { bom, pending, imports } = await getProjectBom(params.id);
   const packingLists = await getProjectPackingLists(params.id);
   const bomRollup = await getBomRollup(params.id);
+  const qcRecords = await getQcRecords(params.id);
 
   const pm = isPM(user);
   const head = isHead(user);
@@ -37,6 +38,7 @@ export default async function ProjectDetail({ params }) {
     canPack: canAccessDepartment(user, 'Dispatch'),
     bomFields: editableBomFields(user), // field-level BOM edit scope (enforced again in the API)
     bomImports: imports,
+    qcRecords, canEditQc: canAccessDepartment(user, 'QC'),
   };
 
   return (

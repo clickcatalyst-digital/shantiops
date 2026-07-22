@@ -11,7 +11,7 @@
 #define MyAppExeName "shanti-agent.exe"
 #define DefaultServerUrl "http://localhost:3000"
 ; Set once the browser extension is published to the Chrome Web Store; empty = don't force-install.
-#define ExtensionId ""
+#define ExtensionId "olhkhmeombmmgobcdmhojnngolecijcc"
 
 [Setup]
 AppId={{7C2E9B1A-4F3D-4A6E-9C2B-1D8E6F0A5B3C}

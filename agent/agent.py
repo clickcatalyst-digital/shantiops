@@ -19,7 +19,7 @@ from pathlib import Path
 
 import requests
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 log = logging.getLogger("usb-agent")
 
 # PyInstaller extracts to a temp dir at runtime, so a frozen build can't keep config next to

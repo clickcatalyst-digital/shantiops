@@ -7,7 +7,7 @@
 ;      the agent redeems it on first run. No prompts.
 ;   2. Manual: the wizard asks for an enrollment code (server URL pre-filled).
 #define MyAppName "Shanti Agent"
-#define MyAppVersion "1.2.0"
+#define MyAppVersion "1.2.1"
 #define MyAppExeName "shanti-agent.exe"
 #define DefaultServerUrl "http://localhost:3000"
 ; Set once the browser extension is published to the Chrome Web Store; empty = don't force-install.
@@ -87,7 +87,8 @@ end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 var
-  ConfigDir, ConfigPath, JsonContent, Existing: string;
+  ConfigDir, ConfigPath, JsonContent: string;
+  Existing: AnsiString;
 begin
   if CurStep <> ssPostInstall then exit;
   ConfigDir := ExpandConstant('{commonappdata}\ShantiAgent');

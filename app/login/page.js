@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { Loader2Icon, Users, Factory, UserCircle, KeyRound, CheckIcon, UserPlusIcon } from 'lucide-react';
+import { Loader2Icon, Users, Factory, UserCircle, KeyRound, CheckIcon, UserPlusIcon, Cloud } from 'lucide-react';
 import { DEPARTMENTS } from '@/lib/milestones';
 
 const DEMO_GROUPS = [
@@ -158,6 +158,17 @@ export default function Login() {
                       </button>
                     );
                   })}
+                  {label === 'Demo Accounts' && (
+                    <a
+                      href="/cloud-storage-pricing.html"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between gap-1 rounded-md border border-input bg-background px-2.5 py-1.5 text-left text-xs font-medium transition-colors hover:bg-muted"
+                    >
+                      <span className="truncate">Cloud Storage</span>
+                      <Cloud className="size-3.5 shrink-0" />
+                    </a>
+                  )}
                 </div>
               </div>
             ))}

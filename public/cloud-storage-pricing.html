@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cloud Storage Pricing — What It Actually Costs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#14273F; --ink-2:#1D3654; --paper:#FAF8F3; --paper-2:#F2EEE3;
+  --slate:#51607A; --slate-light:#8792A3; --line:#E4DFD3;
+  --gold:#B8862E; --gold-light:#FBF1DC; --emerald:#1F6F54; --emerald-light:#E7F1EC;
+  --rust:#9C5233; --rust-light:#F3E2D8; --mono-ink:#1B1B18; --white:#FFFFFF;
+}
+*{box-sizing:border-box;}
+body{ margin:0; background:var(--paper); color:var(--mono-ink); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; }
+.mono{font-family:'IBM Plex Mono',monospace;}
+.display{font-family:'Space Grotesk',sans-serif;}
+
+.hero{ background:linear-gradient(160deg,var(--ink) 0%, var(--ink-2) 100%); color:var(--white); padding:56px 64px 44px; }
+.eyebrow{ font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:#9FB3CC; margin:0 0 14px; }
+.hero h1{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:40px; line-height:1.12; margin:0 0 14px; max-width:760px; letter-spacing:-0.01em; }
+.hero p.sub{ font-size:16px; line-height:1.55; color:#C7D2E0; max-width:600px; margin:0 0 32px; }
+.profile-strip{ display:flex; flex-wrap:wrap; gap:10px; }
+.chip{ background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); border-radius:8px; padding:10px 16px; min-width:120px; }
+.chip .k{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:#8FA3BC; margin-bottom:4px; }
+.chip .v{ font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:500; color:#F3F6FA; }
+
+.wrap{max-width:980px;margin:0 auto;padding:0 64px;}
+section{padding:48px 0;border-bottom:1px solid var(--line);}
+section:last-of-type{border-bottom:none;}
+
+h2.section-title{ font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:600; margin:0 0 6px; color:var(--ink); }
+p.section-note{ color:var(--slate); font-size:14.5px; line-height:1.6; margin:0 0 28px; max-width:640px; }
+
+.toggle{ display:inline-flex; background:var(--paper-2); border:1px solid var(--line); border-radius:999px; padding:4px; margin-bottom:32px; }
+.toggle button{ font-family:'IBM Plex Mono',monospace; font-size:13px; padding:9px 20px; border:none; border-radius:999px; background:transparent; color:var(--slate); cursor:pointer; transition:background .2s, color .2s; }
+.toggle button.active{ background:var(--ink); color:var(--white); }
+
+.bar-row{ display:grid; grid-template-columns:170px 1fr 108px; align-items:center; gap:16px; padding:13px 0; }
+.bar-row .name{ font-size:14.5px; font-weight:600; color:var(--ink); }
+.bar-row .name .tag{ display:block; font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:500; color:var(--slate-light); margin-top:2px; letter-spacing:.02em; }
+.bar-row .name .tag.pick-b2{color:var(--emerald);font-weight:600;}
+.bar-row .name .tag.pick-r2{color:var(--gold);font-weight:600;}
+.bar-row .name .tag.pick-s3{color:var(--rust);font-weight:600;}
+.bar-track{ position:relative; height:26px; background:var(--paper-2); border-radius:5px; overflow:hidden; }
+.bar-fill{ position:absolute; left:0;top:0;bottom:0; background:var(--slate-light); border-radius:5px; transition:width .6s cubic-bezier(.2,.7,.3,1); }
+.bar-fill.fill-b2{background:var(--emerald);}
+.bar-fill.fill-r2{background:var(--gold);}
+.bar-fill.fill-s3{background:var(--rust);}
+.bar-row .cost{ font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600; text-align:right; color:var(--ink); }
+.bar-row .cost.pick-b2{color:var(--emerald);}
+.bar-row .cost.pick-r2{color:var(--gold);}
+.bar-row .cost.pick-s3{color:var(--rust);}
+
+table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+thead th{ text-align:left; font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--slate); font-weight:500; padding:0 12px 10px 0; border-bottom:1px solid var(--line); }
+tbody td{ padding:14px 12px 14px 0; border-bottom:1px solid var(--line); vertical-align:top; }
+tbody tr:last-child td{border-bottom:none;}
+td.provider{ font-weight:600; color:var(--ink); white-space:nowrap; }
+td.rate{font-family:'IBM Plex Mono',monospace;color:var(--mono-ink);}
+td.link a{ font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink); text-decoration:none; border-bottom:1px solid var(--gold); padding-bottom:1px; white-space:nowrap; }
+td.link a:hover{color:var(--gold);}
+.provider-badge{ display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.05em; padding:2px 6px; border-radius:4px; margin-left:8px; vertical-align:middle; }
+.provider-badge.b2{color:var(--emerald);background:var(--emerald-light);}
+.provider-badge.r2{color:var(--gold);background:var(--gold-light);}
+.provider-badge.s3{color:var(--rust);background:var(--rust-light);}
+
+.callout{ background:var(--emerald-light); border:1px solid #CFE3D9; border-radius:10px; padding:26px 28px; display:flex; gap:20px; align-items:flex-start; }
+.callout .mark{ font-family:'Space Grotesk',sans-serif; font-size:26px; font-weight:700; color:var(--emerald); line-height:1; }
+.callout h3{ font-family:'Space Grotesk',sans-serif; font-size:16.5px; margin:0 0 8px; color:var(--ink); }
+.callout p{ margin:0; font-size:14px; line-height:1.65; color:#2C4A3E; max-width:620px; }
+.callout + .callout{margin-top:16px;}
+.callout.gold{background:var(--gold-light);border-color:#EAD9AE;} .callout.gold .mark{color:var(--gold);} .callout.gold p{color:#5C4415;}
+.callout.rust{background:var(--rust-light);border-color:#E3C7B7;} .callout.rust .mark{color:var(--rust);} .callout.rust p{color:#5A2E1C;}
+
+.notes{ font-size:13.5px; line-height:1.7; color:var(--slate); padding-left:18px; margin:0; }
+.notes li{margin-bottom:8px;}
+.notes b{color:var(--ink);}
+
+.tradeoffs{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:26px; }
+.trade{ background:var(--white); border:1px solid var(--line); border-radius:9px; padding:18px 20px; }
+.trade h4{ font-family:'Space Grotesk',sans-serif; font-size:14.5px; margin:0 0 7px; color:var(--ink); }
+.trade p{ margin:0; font-size:13.2px; line-height:1.6; color:var(--slate); }
+.trade .sev{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.05em; text-transform:uppercase; padding:2px 7px; border-radius:4px; margin-left:7px; vertical-align:2px; }
+.sev-ok{background:var(--emerald-light);color:var(--emerald);}
+.sev-watch{background:var(--gold-light);color:var(--gold);}
+
+.group-label{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; margin:22px 0 10px; }
+.group-label:first-child{margin-top:0;}
+.group-label.b2{color:var(--emerald);} .group-label.r2{color:var(--gold);} .group-label.s3{color:var(--rust);}
+
+.switch-box{ border:1px solid #E8D6AE; background:#FDF8EE; border-radius:10px; padding:22px 26px; }
+.switch-box h3{ font-family:'Space Grotesk',sans-serif; font-size:16px; margin:0 0 14px; color:var(--ink); }
+.switch-box ul{margin:0;padding-left:18px;font-size:13.5px;line-height:1.7;color:var(--slate);}
+.switch-box li{margin-bottom:9px;}
+.switch-box b{color:var(--ink);}
+
+footer{ padding:32px 64px 48px; display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:16px; }
+footer .verified{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--slate-light); }
+footer .flag{ font-size:12.5px; color:var(--slate); max-width:520px; line-height:1.6; font-style:italic; }
+
+@media (max-width:720px){
+  .hero{padding:40px 24px 32px;} .wrap{padding:0 24px;} .hero h1{font-size:30px;}
+  .bar-row{grid-template-columns:130px 1fr 78px;gap:10px;} .tradeoffs{grid-template-columns:1fr;}
+  .switch-box{padding:20px;} footer{padding:28px 24px 40px;flex-direction:column;align-items:flex-start;}
+}
+@media (prefers-reduced-motion:reduce){ .bar-fill{transition:none;} }
+</style>
+</head>
+<body>
+<div class="hero">
+  <p class="eyebrow">Prepared for Amitbhai · CRM &amp; ERP cloud storage</p>
+  <h1>What cloud storage will actually cost you</h1>
+  <p class="sub">Based on the answers from your intake questionnaire, here's what the five leading providers would charge — today, and if your data grows to the top of your estimated range. Three of the five stand out for genuinely different reasons; the other two only make sense if you're already using that specific company's cloud.</p>
+  <div class="profile-strip">
+    <div class="chip"><div class="k">Stores</div><div class="v">Docs + backups</div></div>
+    <div class="chip"><div class="k">Data today</div><div class="v">100 GB – 1 TB</div></div>
+    <div class="chip"><div class="k">Growth / mo</div><div class="v">10 – 100 GB</div></div>
+    <div class="chip"><div class="k">Access</div><div class="v">Daily</div></div>
+    <div class="chip"><div class="k">Team</div><div class="v">2–20 people</div></div>
+    <div class="chip"><div class="k">Downloads / mo</div><div class="v">100 GB – 1 TB</div></div>
+    <div class="chip"><div class="k">Priority</div><div class="v">Balanced</div></div>
+    <div class="chip"><div class="k">If down 1 day</div><div class="v">Some work stops</div></div>
+  </div>
+</div>
+<div class="wrap">
+
+<section>
+  <h2 class="section-title">Estimated monthly cost, side by side</h2>
+  <p class="section-note">Storage + downloads combined, for standard/hot-tier storage — the tier that fits daily access. Toggle between your data today and where you'd be at the top of your growth range.</p>
+
+  <div class="toggle">
+    <button id="btn-today" class="active">Today (~100 GB)</button>
+    <button id="btn-grown">At 1 TB</button>
+  </div>
+
+  <div id="bars"></div>
+</section>
+
+<section>
+  <h2 class="section-title">The rate card behind those numbers</h2>
+  <p class="section-note">Public list pricing, standard region, per GB per month. Every provider's own calculator can refine this further for your exact setup.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Provider</th>
+        <th>Storage rate</th>
+        <th>Download (egress) rate</th>
+        <th>Official pricing</th>
+      </tr>
+    </thead>
+    <tbody id="rate-table"></tbody>
+  </table>
+</section>
+
+<section>
+  <h2 class="section-title">Three real options — not just one</h2>
+  <p class="section-note">Three of the five providers each win on something different: the lowest bill, never being charged for downloads, or fitting neatly next to software you may already run elsewhere. Here's the honest case for each.</p>
+
+  <div class="callout">
+    <div class="mark">B2</div>
+    <div>
+      <h3>Backblaze B2 — the cheapest, month after month</h3>
+      <p>At your size, B2 costs the least of the five — a little less than Cloudflare, and much less than Amazon, Microsoft, or Google. It also won't charge you extra for downloading files, as long as what you download each month stays under three times what you have stored — which your numbers comfortably do. The catch: B2 only sells storage. It doesn't run the software behind your CRM or offer the extra cloud services the big three do, so it works best as a standalone filing cabinet, not as part of a bigger cloud setup.</p>
+    </div>
+  </div>
+
+  <div class="callout gold">
+    <div class="mark">R2</div>
+    <div>
+      <h3>Cloudflare R2 — you'll never be charged to download a file</h3>
+      <p>R2 costs a bit more than B2 to store your files each month, but downloading them is always free — no ratio to track, no fine print. If your team's downloads ever grow faster than planned, or you'd simply rather not think about it, this removes that worry for good. It's run by Cloudflare, a large and widely-known company, which may feel more familiar to a review committee than Backblaze. The catch: at your current numbers, you'd likely pay somewhat more overall for a guarantee your usage may not end up needing.</p>
+    </div>
+  </div>
+
+  <div class="callout rust">
+    <div class="mark">S3</div>
+    <div>
+      <h3>Amazon S3 — the safe choice if you're already inside a big cloud</h3>
+      <p>S3 costs more than both B2 and R2 at your size, but it's the natural pick if the software running your CRM or ERP already lives on Amazon's, Microsoft's, or Google's cloud. Keeping files on the same cloud as the software that uses them avoids extra delay and avoids paying two companies to move data between them. It also carries the deepest paperwork and certifications for handling sensitive data, which matters more as a business grows. The catch: for a small team storing mostly documents and backups, you'd be paying big-cloud prices for a benefit — same-cloud convenience — that only shows up once your software actually lives there.</p>
+    </div>
+  </div>
+
+  <p style="margin-top:20px;font-size:14.5px;line-height:1.6;color:var(--slate);max-width:640px;">There's no wrong choice among these three — it comes down to what your team already runs, and how much you'd rather never think about download costs again. The choice is yours; the next section lays out the honest downside of each so you're deciding with full information.</p>
+</section>
+
+<section>
+  <h2 class="section-title">The honest downside of each option</h2>
+  <p class="section-note">Every option here trades something away. None of these are dealbreakers for a small team storing mostly documents and backups — but you should pick with your eyes open.</p>
+
+  <p class="group-label b2">Backblaze B2</p>
+  <div class="tradeoffs">
+    <div class="trade">
+      <h4>Storage only — nothing else<span class="sev sev-watch">Check first</span></h4>
+      <p>B2 doesn't run software or offer extra cloud services alongside storage. If your CRM or ERP ever needs to run inside the same cloud as its files, B2 can't host that side of it — it only ever works as a standalone filing cabinet.</p>
+    </div>
+    <div class="trade">
+      <h4>No India-based data center<span class="sev sev-watch">Check first</span></h4>
+      <p>Amazon, Microsoft, and Google all have data centers in India. Backblaze doesn't. If it ever becomes a requirement to legally keep your files inside India — a government contract, certain regulated data — that's a full switch, not a setting.</p>
+    </div>
+  </div>
+
+  <p class="group-label r2">Cloudflare R2</p>
+  <div class="tradeoffs">
+    <div class="trade">
+      <h4>You pay more to insure against a risk you may not have<span class="sev sev-watch">Watch this</span></h4>
+      <p>R2's storage costs roughly double B2's, in exchange for a guarantee — free downloads, always — that your current usage doesn't actually need. B2's free-download allowance already comfortably covers your numbers, so today that guarantee isn't buying you much.</p>
+    </div>
+    <div class="trade">
+      <h4>A newer service, with a few short hiccups<span class="sev sev-ok">Worth knowing</span></h4>
+      <p>Cloudflare's storage product has had a handful of brief outages over the past year — none that lost data, but worth knowing before treating any provider as bulletproof. Backblaze and the big three each have a longer track record specifically for storage.</p>
+    </div>
+  </div>
+
+  <p class="group-label s3">Amazon S3</p>
+  <div class="tradeoffs">
+    <div class="trade">
+      <h4>The most expensive of the three, for your numbers<span class="sev sev-watch">Watch this</span></h4>
+      <p>At 1 TB, S3 costs roughly 15 times what B2 does and about 7 times what R2 does. That premium buys same-cloud convenience and deeper compliance paperwork — value you'll only see if your software actually runs on Amazon's cloud.</p>
+    </div>
+    <div class="trade">
+      <h4>Downloading files still isn't free<span class="sev sev-ok">Low impact</span></h4>
+      <p>Unlike R2's always-free downloads, S3 charges once you're past the first 100 GB you download each month. At your volumes that adds up a little, though it's modest next to what you'd already be paying for storage there.</p>
+    </div>
+  </div>
+
+  <div class="switch-box">
+    <h3>The quick way to decide</h3>
+    <ul>
+      <li><b>Your CRM/ERP software already runs on Amazon, Microsoft, or Google's cloud</b> → use that same company's storage (S3, Azure, or GCS). Splitting storage and software across two different clouds costs more in delay and complexity than it saves in dollars.</li>
+      <li><b>Keeping files inside India could ever become a requirement</b> → Amazon, Microsoft, or Google. Backblaze and Cloudflare can't offer this today.</li>
+      <li><b>You'd rather never think about download costs again</b> → Cloudflare R2. Costs a little more, removes the question permanently.</li>
+      <li><b>None of the above apply, and you just want the lowest bill</b> → Backblaze B2 — and put what you save toward a proper backup and version-history layer, which you'll want regardless of which provider you choose.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2 class="section-title">What this estimate does — and doesn't — cover</h2>
+  <ul class="notes">
+    <li><b>These are estimates, not quotes.</b> All five providers price by region, redundancy option, and sometimes negotiated/committed-use discounts — actual invoices can run higher or lower than shown here. Use the linked calculators for a binding number.</li>
+    <li><b>Recovery-within-a-day</b> (what you selected) needs versioning or a backup layer on top of raw storage — that's a separate line item depending on the backup tool you use, not a per-GB storage rate.</li>
+    <li><b>Compliance:</b> you flagged this as private/internal data only — all five providers scramble your files so they're unreadable to anyone but your account, both while stored and while being transferred, which is sufficient for that classification.</li>
+    <li><b>Rates shown are US-region list pricing.</b> If you host in an India region, Amazon/Microsoft/Google's rates run somewhat higher than the figures above; B2 and R2 price the same worldwide, so their numbers hold. The linked calculators will settle it for your chosen region.</li>
+    <li>Figures exclude taxes and support-plan fees. The small per-action fees some providers charge for uploading, downloading, or listing files are now $0 on B2's standard usage (changed May 2026), and fall inside R2's free monthly allowance at your volumes — so for the two cheapest options, this genuinely isn't a hidden cost.</li>
+  </ul>
+</section>
+
+</div>
+<footer>
+  <div class="verified mono">Pricing verified against public sources · July 2026</div>
+  <div class="flag">Note for Pujan: Q3a and Q3b were answered (100 MB–1 GB files, under 100 downloads/day) even though "Videos" and "Customers/public" weren't ticked in Q1/Q5. If those are real, the implied egress is far above the Q7 answer of 100 GB–1 TB/month — enough to break B2's 3× free-download math and flip the recommendation to R2. Confirm before this goes in the video.</div>
+</footer>
+<script>
+const providerMeta = {
+  b2: {label:"Cheapest overall", badge:"CHEAPEST", cls:"b2"},
+  r2: {label:"Never charges to download", badge:"NO DOWNLOAD FEES", cls:"r2"},
+  s3: {label:"Best big-cloud option", badge:"BIG-CLOUD PICK", cls:"s3"},
+  azure: {label:"If you're on Microsoft", badge:null, cls:""},
+  gcs: {label:"If you're on Google Cloud", badge:null, cls:""}
+};
+const scenarios = {
+  today: { label: "Today (~100 GB stored / ~100 GB downloaded)", data: [
+    {id:"b2", name:"Backblaze B2", cost:0.70},
+    {id:"r2", name:"Cloudflare R2", cost:1.35},
+    {id:"s3", name:"AWS S3", cost:2.30},
+    {id:"azure", name:"Azure Blob (Hot)", cost:10.50},
+    {id:"gcs", name:"Google Cloud Storage", cost:14.00}
+  ]},
+  grown: { label: "At 1 TB stored / 1 TB downloaded", data: [
+    {id:"b2", name:"Backblaze B2", cost:7.12},
+    {id:"r2", name:"Cloudflare R2", cost:15.21},
+    {id:"s3", name:"AWS S3", cost:106.71},
+    {id:"azure", name:"Azure Blob (Hot)", cost:107.52},
+    {id:"gcs", name:"Google Cloud Storage", cost:143.36}
+  ]}
+};
+const rateRows = [
+  {id:"b2", name:"Backblaze B2", storage:"$0.00695/GB ($6.95/TB, 10 GB free)", egress:"Free up to 3× avg. stored data, then $0.01/GB", link:"https://www.backblaze.com/cloud-storage/pricing"},
+  {id:"r2", name:"Cloudflare R2", storage:"$0.015/GB (10 GB free)", egress:"$0 — always free", link:"https://www.cloudflare.com/developer-platform/products/r2/"},
+  {id:"s3", name:"AWS S3 (Standard)", storage:"$0.023/GB", egress:"$0.09/GB (first 100 GB/mo free)", link:"https://aws.amazon.com/s3/pricing/"},
+  {id:"azure", name:"Azure Blob (Hot)", storage:"~$0.018/GB", egress:"~$0.087/GB", link:"https://azure.microsoft.com/en-us/pricing/details/storage/blobs/"},
+  {id:"gcs", name:"Google Cloud Storage (Standard)", storage:"$0.020/GB", egress:"~$0.12/GB", link:"https://cloud.google.com/storage/pricing"}
+];
+function renderBars(key){
+  const s = scenarios[key];
+  const max = Math.max(...s.data.map(d=>d.cost));
+  const el = document.getElementById('bars');
+  el.innerHTML = s.data.map(d=>{
+    const pct = Math.max((d.cost/max*100), 3);
+    const meta = providerMeta[d.id];
+    const cls = meta.cls ? ' pick-'+meta.cls : '';
+    return `<div class="bar-row">
+      <div class="name">${d.name}<span class="tag${cls}">${meta.label}</span></div>
+      <div class="bar-track"><div class="bar-fill${meta.cls?' fill-'+meta.cls:''}" style="width:${pct}%"></div></div>
+      <div class="cost${cls}">$${d.cost.toFixed(2)}/mo</div>
+    </div>`;
+  }).join('');
+}
+function renderTable(){
+  document.getElementById('rate-table').innerHTML = rateRows.map(r=>{
+    const meta = providerMeta[r.id];
+    const badge = meta.badge ? `<span class="provider-badge ${meta.cls}">${meta.badge}</span>` : '';
+    return `<tr>
+      <td class="provider">${r.name}${badge}</td>
+      <td class="rate">${r.storage}</td>
+      <td class="rate">${r.egress}</td>
+      <td class="link"><a href="${r.link}" target="_blank" rel="noopener">View pricing ↗</a></td>
+    </tr>`;
+  }).join('');
+}
+const btnToday = document.getElementById('btn-today');
+const btnGrown = document.getElementById('btn-grown');
+btnToday.addEventListener('click', ()=>{ btnToday.classList.add('active'); btnGrown.classList.remove('active'); renderBars('today'); });
+btnGrown.addEventListener('click', ()=>{ btnGrown.classList.add('active'); btnToday.classList.remove('active'); renderBars('grown'); });
+renderBars('today');
+renderTable();
+</script>
+</body>
+</html>
